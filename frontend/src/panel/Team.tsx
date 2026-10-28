@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { useEffect, useState, type FormEvent } from "react";
 import { hasWebNfc, writeUrl } from "../nfc.ts";
 import { api, useApi, type ClockPoint, type Department, type Employee, type UnknownCard, type Workplace } from "./api.ts";
+import { NewFirm } from "./Panel.tsx";
 import { Dialog, Field, useToast } from "./ui.tsx";
 
 // Słownik Kolorów, połączenia 201, 204, 208, 209 (s. 128–132) — proposed department colours.
@@ -401,6 +402,7 @@ function Firm({ firm, onChange }: { firm: Workplace; onChange: () => void }) {
   const toast = useToast();
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [founding, setFounding] = useState(false);
   const save = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -432,8 +434,13 @@ function Firm({ firm, onChange }: { firm: Workplace; onChange: () => void }) {
       </form>
       <div className="inline-form">
         <a className="btn" href={`/api/w/${firm.id}/export/`} download={`grafik-${firm.name}.json`}>Pobierz wszystkie dane (JSON)</a>
+        <button className="btn" onClick={() => setFounding(true)}>Załóż kolejną firmę</button>
         <button className="btn danger" onClick={() => setDeleting(true)}>Usuń firmę i wszystkie dane</button>
       </div>
+      <Dialog open={founding} onClose={() => setFounding(false)} title="Nowa firma">
+        <p>Osobny grafik, zespół i punkty NFC. Przełączasz się między firmami na górze panelu.</p>
+        <NewFirm />
+      </Dialog>
       <Dialog open={deleting} onClose={() => setDeleting(false)} title="Usunąć firmę?">
         <form onSubmit={remove} style={{ display: "grid", gap: 14 }}>
           <p>

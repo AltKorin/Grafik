@@ -100,6 +100,43 @@ class IsolationTests(Base):
         self.assertEqual(names, ["Bistro X"])
 
 
+class NewFirmTests(Base):
+    body = {"firm": "Kawiarnia Z", "name": "Jan Nowak", "accept": True}
+
+    def test_account_without_firm_founds_one_and_directs_it(self):
+        lone = get_user_model().objects.create_user("bez-firmy", password=PASSWORD)
+        client = APIClient()
+        client.force_authenticate(lone)
+        self.assertEqual(client.get("/api/workplaces/").json(), [])
+        made = client.post("/api/workplaces/", self.body, format="json")
+        self.assertEqual(made.status_code, 200, made.content)
+        self.assertEqual((made.json()["name"], made.json()["role"]), ("Kawiarnia Z", "dyrektor"))
+        self.assertEqual(client.get(f"/api/w/{made.json()['id']}/employees/").status_code, 200)
+        self.assertTrue(lone.termsacceptance_set.exists())
+
+    def test_second_firm_stays_separate_from_the_first(self):
+        made = self.api("ku").post("/api/workplaces/", self.body, format="json").json()
+        self.assertEqual(made["role"], "dyrektor")
+        self.assertEqual(sorted(w["role"] for w in self.api("ku").get("/api/workplaces/").json()), ["dyrektor", "pracownik"])
+        # directing the new firm gives nothing in the old one
+        self.assertEqual(self.api("ku").get(self.url("export/")).status_code, 403)
+        self.assertEqual(self.api("dx").get(f"/api/w/{made['id']}/week/").status_code, 404)
+
+    def test_bad_inputs_found_nothing(self):
+        before = Workplace.objects.count()
+        for bad in ({**self.body, "accept": False}, {**self.body, "firm": "  "}, {**self.body, "name": ""},
+                    {**self.body, "firm": 7}, {**self.body, "firm": "x" * 201}, ["lista"]):
+            with self.subTest(bad=bad):
+                self.assertEqual(self.api("ku").post("/api/workplaces/", bad, format="json").status_code, 400)
+        self.assertEqual(APIClient().post("/api/workplaces/", self.body, format="json").status_code, 403)
+        self.assertEqual(Workplace.objects.count(), before)
+
+    @override_settings(MAX_FIRMS_PER_ACCOUNT=2)
+    def test_limit_of_firms_per_account(self):
+        self.assertEqual(self.api("dx").post("/api/workplaces/", self.body, format="json").status_code, 200)
+        self.assertEqual(self.api("dx").post("/api/workplaces/", self.body, format="json").status_code, 409)
+
+
 class RoleTests(Base):
     def test_manager_arranges_only_own_department(self):
         self.w.shift("ku", by="kk")

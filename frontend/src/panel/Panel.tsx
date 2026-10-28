@@ -1,6 +1,7 @@
 import "../fonts.css";
 import { useEffect, useState, type FormEvent } from "react";
-import { loadSession, logIn, logOut, useApi, type Workplace } from "./api.ts";
+import { PRIVACY } from "../site/Site.tsx";
+import { api, loadSession, logIn, logOut, useApi, type Workplace } from "./api.ts";
 import Requests from "./Requests.tsx";
 import Team from "./Team.tsx";
 import Time from "./Time.tsx";
@@ -66,6 +67,47 @@ export function Login({ onLogin, title = "Grafik", lead = "Zaloguj się, żeby z
   );
 }
 
+/** Founds a firm for the logged-in account (it becomes the director) and opens it. */
+export function NewFirm() {
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    setBusy(true);
+    setError("");
+    try {
+      const firm = await api.post<Workplace>("/workplaces/", { firm: f.get("firm"), name: f.get("name"), accept: f.get("accept") === "on" });
+      try {
+        localStorage.setItem(FIRM_KEY, firm.id);
+      } catch {
+        /* per-browser convenience only */
+      }
+      window.location.assign("/panel/zespol");
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+      {error && <p className="error">{error}</p>}
+      <Field label="Nazwa firmy">{(id) => <input id={id} name="firm" type="text" required maxLength={200} />}</Field>
+      <Field label="Twoje imię i nazwisko" hint="Tak zobaczą Cię pracownicy w grafiku.">
+        {(id) => <input id={id} name="name" type="text" required maxLength={120} autoComplete="name" />}
+      </Field>
+      <label className="check">
+        <input name="accept" type="checkbox" required />
+        <span>
+          Akceptuję <a href="/regulamin" target="_blank">regulamin</a> i zapoznałem/am się z{" "}
+          <a href={PRIVACY} target="_blank" rel="noopener">polityką prywatności</a>.
+        </span>
+      </label>
+      <button className="btn primary" disabled={busy}>{busy ? "Zakładam…" : "Załóż firmę"}</button>
+    </form>
+  );
+}
+
 const PAGES = [
   { path: "/panel", label: "Dziś", min: "pracownik" },
   { path: "/panel/grafik", label: "Grafik", min: "pracownik" },
@@ -93,7 +135,11 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
   if (!firm)
     return (
       <main className="page">
-        <p className="empty">To konto nie należy jeszcze do żadnej firmy. Poproś dyrektora o dodanie.</p>
+        <p className="empty">To konto nie należy jeszcze do żadnej firmy. Pracujesz w firmie, która używa Grafiku? Poproś dyrektora o dodanie. Prowadzisz firmę? Załóż ją tutaj.</p>
+        <section className="card settings-card">
+          <h2>Nowa firma</h2>
+          <NewFirm />
+        </section>
         <button className="btn" onClick={() => logOut().then(onLogout)}>Wyloguj</button>
       </main>
     );

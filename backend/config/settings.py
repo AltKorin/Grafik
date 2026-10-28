@@ -141,6 +141,8 @@ SESSION_COOKIE_AGE = int(os.environ.get("SESSION_DAYS", "90")) * 86400
 # an entry older than MAX_SHIFT_HOURS without an exit no longer makes the next tap an exit.
 PUNCH_DEBOUNCE_SECONDS = int(os.environ.get("PUNCH_DEBOUNCE_SECONDS", "60"))
 MAX_SHIFT_HOURS = int(os.environ.get("MAX_SHIFT_HOURS", "16"))
+# Backpressure on "Nowa firma" in the panel: firms one account may direct.
+MAX_FIRMS_PER_ACCOUNT = int(os.environ.get("MAX_FIRMS_PER_ACCOUNT", "10"))
 # RODO retention (komenda `retencja_danych`, cron): login trail kept this many days.
 RETENCJA_LOGIN_DNI = int(os.environ.get("RETENCJA_LOGIN_DNI", "365"))
 # GA4 on public pages only (landing, rejestracja, regulamin); empty = no tag. Shape-checked: it lands in a script URL.

@@ -15,6 +15,7 @@ import re
 from functools import cache
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -53,8 +54,6 @@ def text(data, key, limit):
 @transaction.atomic
 def register(request, data):
     """New account + new firm; the person becomes its director. Returns the user, not logged in yet."""
-    from grafik.models import Employee, Workplace
-
     if not isinstance(data, dict):
         raise DomainError("Oczekiwano obiektu JSON")
     if text(data, "website", 200):  # honeypot: people never see this field
@@ -82,11 +81,39 @@ def register(request, data):
             user = User.objects.create_user(email, email=email, password=password)
     except IntegrityError:  # two submits of the same form at once
         raise DomainError("Konto z tym adresem już istnieje — zaloguj się", 409) from None
+    return user, found_firm(request, user, firm_name, person)
+
+
+def found_firm(request, user, firm_name, person):
+    """The account becomes director of a new firm and accepts the current regulamin."""
+    from grafik.models import Employee, Workplace
+
     firm = Workplace.objects.create(name=firm_name)
     Employee.objects.create(workplace=firm, user=user, name=person, role="dyrektor")
     current = terms()
     TermsAcceptance.objects.create(user=user, version=current["version"], sha256=current["sha256"], ip=client_ip(request))
-    return user, firm
+    return firm
+
+
+@transaction.atomic
+def add_firm(request, data):
+    """A logged-in account founds another firm (or its first one, e.g. our service admin)."""
+    from grafik.models import Employee
+
+    if not isinstance(data, dict):
+        raise DomainError("Oczekiwano obiektu JSON")
+    firm_name = text(data, "firm", 200).strip()
+    person = text(data, "name", 120).strip()
+    if not firm_name:
+        raise DomainError("Podaj nazwę firmy")
+    if not person:
+        raise DomainError("Podaj swoje imię i nazwisko")
+    if data.get("accept") is not True:
+        raise DomainError("Zaakceptuj regulamin, żeby założyć firmę")
+    user = get_user_model().objects.select_for_update().get(pk=request.user.pk)  # two submits at once count once
+    if Employee.objects.filter(user=user, role="dyrektor").count() >= settings.MAX_FIRMS_PER_ACCOUNT:
+        raise DomainError(f"Jedno konto może prowadzić najwyżej {settings.MAX_FIRMS_PER_ACCOUNT} firm", 409)
+    return found_firm(request, user, firm_name, person)
 
 
 def change_password(request, data):

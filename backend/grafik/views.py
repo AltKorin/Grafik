@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
+from core import accounts
 from core.domain_errors import DomainError
 
 from . import clock, schedule, team
@@ -46,7 +47,10 @@ def u(request):
 
 # --- workplaces and team --------------------------------------------------------------------------
 
-workplaces = methods(GET=lambda r: team.list_workplaces(u(r)))
+workplaces = methods(
+    GET=lambda r: team.list_workplaces(u(r)),
+    POST=lambda r: team.workplace_json(team.workplace_access(u(r), accounts.add_firm(r, r.data).id)),
+)
 workplace = methods(
     PATCH=lambda r, workplace_id: team.update_workplace(u(r), workplace_id, r.data),
     DELETE=lambda r, workplace_id: team.delete_workplace(u(r), workplace_id, r.data),

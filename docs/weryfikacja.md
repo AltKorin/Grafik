@@ -4,7 +4,7 @@
 
 | Bramka | Wynik | Jak uruchomić |
 | --- | --- | --- |
-| Testy backendu (SQLite) | 55/55 | `cd backend && DEBUG=1 ../.venv/bin/python manage.py test grafik core` |
+| Testy backendu (SQLite) | 59/59 | `cd backend && DEBUG=1 ../.venv/bin/python manage.py test grafik core` |
 | Testy backendu (PostgreSQL, kontener) | 55/55 | `docker compose exec -T api python manage.py test grafik core` |
 | Czyste reguły czasu we froncie | OK | `cd frontend && npm run check` |
 | Build frontu (tsc + vite) | OK | `npm run build` |
@@ -33,7 +33,7 @@ E2E zmienia dane demo → potem `docker compose exec -T api python manage.py see
 
 | Rzecz | Lista | Dodaj | Zmień | Usuń | Gdzie |
 | --- | --- | --- | --- | --- | --- |
-| Firma | przełącznik firm | rejestracja | nazwa, strefa | z potwierdzeniem nazwą + eksport przed | Zespół i NFC → Firma |
+| Firma | przełącznik firm | rejestracja; „Załóż kolejną firmę” (Firma) i formularz na pustym panelu konta bez firmy | nazwa, strefa | z potwierdzeniem nazwą + eksport przed | Zespół i NFC → Firma |
 | Dział | ✓ (liczba osób) | ✓ | nazwa, kolor | ✓ — blokada z nazwiskami, gdy są w nim osoby | Zespół i NFC |
 | Pracownik | ✓ | ✓ (z loginem lub bez) | imię, dział, rola, aktywny | ✓ — z odbiciami → archiwum (ewidencja zostaje), bez → usunięcie | Zespół i NFC |
 | Login pracownika | w liście | ✓ (hasło pokazane raz) | nowe hasło | odbierz logowanie | okno pracownika |
@@ -45,5 +45,4 @@ E2E zmienia dane demo → potem `docker compose exec -T api python manage.py see
 | Wniosek | ✓ moje / do rozpatrzenia / rozpatrzone | ✓ | ✓ dopóki czeka | wycofaj | Wnioski |
 | Odbicie | ✓ w oknie osoby (Czas pracy) | dopisz korektę z powodem | — (niezmienialne: anuluj + dopisz) | anuluj z powodem (zostaje przekreślone) | Czas pracy |
 
-Dziura do decyzji: **druga firma dla istniejącego konta** — dziś tylko przez nową rejestrację (inny e-mail)
-albo przez nas w adminie. Dla małych firm rzadkie; dodać „Nowa firma” w panelu, gdy ktoś poprosi.
+Dziura „druga firma dla istniejącego konta” zamknięta 28.10 (`POST /api/workplaces/`, limit `MAX_FIRMS_PER_ACCOUNT`, testy `NewFirmTests`).
