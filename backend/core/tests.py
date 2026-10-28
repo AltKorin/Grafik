@@ -246,3 +246,85 @@ class RetentionTests(TestCase):
         self.assertEqual(LoginEvent.objects.count(), 2)
         call_command("retencja_danych", stdout=StringIO())
         self.assertEqual(list(LoginEvent.objects.values_list("username", flat=True)), ["nowy"])
+
+
+class EnglishTests(TestCase):
+    """Every Polish message the API can send has an English twin with the same {params} (core.i18n)."""
+
+    SOURCES = ["core/accounts.py", "core/views.py", "grafik/access.py", "grafik/clock.py", "grafik/domain.py",
+               "grafik/schedule.py", "grafik/team.py"]
+    # call → (positional index, keyword) of the field label it turns into a message
+    LABELS = {"identifier": (1, "what"), "text": (4, "label"), "calendar_day": (1, "label"),
+              "clock_time": (1, "label"), "local_moment": (2, "label")}
+    PROBLEMS = ["brak wyjścia", "wyjście bez wejścia"]  # domain.sessions, translated where reports are built
+
+    @staticmethod
+    def keys():
+        import ast
+        from pathlib import Path
+
+        from django.apps import apps
+        from django.conf import settings
+
+        found = set(EnglishTests.PROBLEMS)
+        for source in EnglishTests.SOURCES:
+            tree = ast.parse((Path(settings.BASE_DIR) / source).read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    args = node.args.args[len(node.args.args) - len(node.args.defaults):]
+                    found |= {d.value for a, d in zip(args, node.args.defaults)
+                              if a.arg in ("label", "what") and isinstance(d, ast.Constant) and isinstance(d.value, str)}
+                if not isinstance(node, ast.Call):
+                    continue
+                name = getattr(node.func, "id", None) or getattr(node.func, "attr", None)
+                strings = []
+                if name in ("DomainError", "tr"):
+                    strings = node.args[:1] + [k.value for k in node.keywords]
+                elif name in EnglishTests.LABELS:
+                    index, keyword = EnglishTests.LABELS[name]
+                    strings = node.args[index:index + 1] + [k.value for k in node.keywords if k.arg == keyword]
+                strings += [branch for s in strings if isinstance(s, ast.IfExp) for branch in (s.body, s.orelse)]
+                found |= {s.value for s in strings if isinstance(s, ast.Constant) and isinstance(s.value, str)}
+        for model in apps.get_app_config("grafik").get_models():
+            if model.__name__.startswith("Historical"):
+                continue  # simple-history rows are admin-only
+            for field in model._meta.fields:
+                found |= {str(label) for _, label in field.choices or ()}
+        return found
+
+    def test_every_message_has_english_with_the_same_params(self):
+        import string
+
+        from .i18n import english
+
+        en = english()
+        keys = self.keys()
+        self.assertGreater(len(keys), 80)  # the scan itself works
+        self.assertEqual(sorted(k for k in keys if k not in en), [])
+        fields = lambda s: sorted(f for _, f, _, _ in string.Formatter().parse(s) if f)
+        self.assertEqual([k for k in keys if fields(k) != fields(en[k])], [])
+        self.assertEqual(sorted(set(en) - keys), [])  # no dead entries
+
+    def test_api_answers_in_the_chosen_language(self):
+        client = APIClient()
+        client.cookies["django_language"] = "en"
+        self.assertEqual(client.post("/api/session/", {"username": "x", "password": "y"}, format="json").json()["error"],
+                         "Incorrect login or password")
+        self.assertIn("Polish version is binding", client.get("/api/terms/").json()["html"])
+        polish = APIClient(HTTP_ACCEPT_LANGUAGE="pl")
+        self.assertEqual(polish.post("/api/session/", {"username": "x", "password": "y"}, format="json").json()["error"],
+                         "Nieprawidłowy login lub hasło")
+        english_header = APIClient(HTTP_ACCEPT_LANGUAGE="en-GB,en;q=0.9")
+        self.assertIn("binding", english_header.get("/api/terms/").json()["html"])
+
+    def test_params_are_translated_and_unknown_text_stays_polish(self):
+        from django.utils import translation
+
+        from .i18n import error_body, tr
+
+        with translation.override("en"):
+            self.assertEqual(error_body(DomainError("Pole „{label}” jest wymagane", label="nazwa firmy"))["error"],
+                             "The “company name” field is required")
+            self.assertEqual(tr("Tekst bez tłumaczenia"), "Tekst bez tłumaczenia")
+        with translation.override("pl"):
+            self.assertEqual(str(DomainError("Pole „{label}” jest wymagane", label="uwagi")), "Pole „uwagi” jest wymagane")

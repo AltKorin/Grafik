@@ -1,5 +1,7 @@
-// Panel ↔ Django API. Session cookie + CSRF header; errors carry the server's Polish message.
+// Panel ↔ Django API. Session cookie + CSRF header; errors carry the server's message in the chosen language
+// (the django_language cookie from i18n.ts).
 import { useEffect, useState } from "react";
+import { t } from "../i18n.ts";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -17,18 +19,7 @@ async function call<T>(path: string, method = "GET", body?: unknown): Promise<T>
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ApiError(response.status, data.error ?? data.detail ?? `Błąd serwera (${response.status})`);
-  return data as T;
-}
-
-/** Multipart upload (logos). No Content-Type header: the browser sets the boundary. */
-export async function upload<T>(path: string, file: File, fields: Record<string, string> = {}): Promise<T> {
-  const body = new FormData();
-  body.append("file", file);
-  for (const [k, v] of Object.entries(fields)) body.append(k, v);
-  const response = await fetch(`/api${path}`, { method: "POST", credentials: "same-origin", headers: { "X-CSRFToken": csrf }, body });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ApiError(response.status, data.error ?? data.detail ?? `Błąd serwera (${response.status})`);
+  if (!response.ok) throw new ApiError(response.status, data.error ?? data.detail ?? t("Błąd serwera ({status})", { status: response.status }));
   return data as T;
 }
 

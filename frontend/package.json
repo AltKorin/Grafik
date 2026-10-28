@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "check": "node src/panel/time.check.ts",
+    "check": "node src/panel/time.check.ts && node src/i18n.check.ts",
     "e2e": "node e2e/flow.mjs"
   },
   "dependencies": {

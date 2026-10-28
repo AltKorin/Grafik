@@ -34,6 +34,11 @@ stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias
 - Link naklejki jest publiczny z natury — przy wycieku „Nowy link” w panelu; kiosk ma osobny sekret (sha256 w bazie).
 - Czytniki USB różnie podają UID (hex/dziesiętnie) — karty przypisuj z listy „nieznane karty” z tego samego kiosku.
 - Strefa czasowa per firma (`Workplace.timezone`); `TIME_ZONE=UTC` w ustawieniach.
+- **PL/EN**: polski tekst = klucz. Front: `t("…")` + wpis w `frontend/src/en.ts` (`npm run check` pada bez wpisu, z martwym wpisem
+  albo z innymi `{param}`). Backend: komunikat `DomainError("… {x} …", x=…)` / `tr("…")` + wpis w `grafik/data/en.json`
+  (test `core.tests.EnglishTests` skanuje kod). Język = ciasteczko `django_language` (przełącznik) → `LocaleMiddleware`.
+  Regulamin EN (`regulamin.en.html`) jest tłumaczeniem — wiąże PL, akceptacja zapisuje hash PL; zmiana PL = popraw EN.
+  E2E w PL wymusza `locale: "pl-PL"` (headless Chromium ma en-US, a język idzie za przeglądarką).
 
 ## Do wdrożenia (czeka na usera)
 1. ~~Wdrożenie~~ — zrobione 28.10. Aktualizacja: `deploy/push.sh grafik-prod:/opt/grafik` → `ssh grafik-prod 'cd /opt/grafik && deploy/deploy.sh'` → `deploy/smoke.sh https://grafik.sudomie.pl`. Zostaje rezerwacja DHCP (router).

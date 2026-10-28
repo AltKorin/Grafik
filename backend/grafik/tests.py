@@ -177,7 +177,7 @@ class ShiftTests(Base):
     def test_unavailability_blocks_then_withdrawal_unblocks_and_history_keeps_proof(self):
         u = schedule.create_unavailability(self.w.user("ku"), self.w.x.id, {"date_from": "2026-11-03", "date_to": "2026-11-04", "kind": "l4"})
         message = self.assertDomain(409, self.w.shift, "ku")
-        self.assertIn("l4", message)
+        self.assertIn("L4", message)
         schedule.delete_unavailability(self.w.user("ku"), self.w.x.id, u["id"])
         self.w.shift("ku")
         self.assertEqual(Unavailability.history.filter(id=u["id"], history_type="-").count(), 1)

@@ -2,8 +2,9 @@
 import { useState, type FormEvent } from "react";
 import { api, type Away } from "./api.ts";
 import { Dialog, Field, dateRange, useToast } from "./ui.tsx";
+import { t } from "../i18n.ts";
 
-export const AWAY_KINDS: [Away["kind"], string][] = [["urlop", "Urlop"], ["l4", "L4"], ["inne", "Niedostępność"]];
+export const AWAY_KINDS: [Away["kind"], string][] = [["urlop", t("Urlop")], ["l4", t("L4")], ["inne", t("Niedostępność")]];
 
 export function AwayDialog({ firmId, away, employee, defaultDay, onClose, onSaved }: {
   firmId: string;
@@ -31,7 +32,9 @@ export function AwayDialog({ firmId, away, employee, defaultDay, onClose, onSave
         ? await api.patch<Away>(`/w/${firmId}/unavailability/${away.id}/`, body)
         : await api.post<Away>(`/w/${firmId}/unavailability/`, body);
       const clashes = saved.conflicts?.length ?? 0;
-      toast(clashes ? `Zapisano. W tym czasie ${clashes === 1 ? "jest zaplanowana zmiana" : `są zaplanowane zmiany (${clashes})`} — kierownik zobaczy konflikt w grafiku.` : "Zapisano. Widać to od razu w grafiku.");
+      toast(clashes === 1 ? t("Zapisano. W tym czasie jest zaplanowana zmiana — kierownik zobaczy konflikt w grafiku.")
+        : clashes ? t("Zapisano. W tym czasie są zaplanowane zmiany ({n}) — kierownik zobaczy konflikt w grafiku.", { n: clashes })
+        : t("Zapisano. Widać to od razu w grafiku."));
       onSaved();
       onClose();
     } catch (err) {
@@ -42,7 +45,7 @@ export function AwayDialog({ firmId, away, employee, defaultDay, onClose, onSave
     if (!away) return;
     try {
       await api.delete(`/w/${firmId}/unavailability/${away.id}/`, {});
-      toast("Zgłoszenie usunięte. Zmiany na te dni można już planować.");
+      toast(t("Zgłoszenie usunięte. Zmiany na te dni można już planować."));
       onSaved();
       onClose();
     } catch (err) {
@@ -51,10 +54,10 @@ export function AwayDialog({ firmId, away, employee, defaultDay, onClose, onSave
   };
   const from = away?.date_from ?? defaultDay ?? "";
   return (
-    <Dialog open onClose={onClose} title={away ? "Zmień zgłoszenie" : employee ? `Niedyspozycyjność — ${employee.name}` : "Zgłoś niedyspozycyjność"}>
+    <Dialog open onClose={onClose} title={away ? t("Zmień zgłoszenie") : employee ? `${t("Niedyspozycyjność")} — ${employee.name}` : t("Zgłoś niedyspozycyjność")}>
       <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
         {error && <p className="error">{error}</p>}
-        <Field label="Rodzaj">
+        <Field label={t("Rodzaj")}>
           {(id) => (
             <select id={id} name="kind" defaultValue={away?.kind ?? "urlop"}>
               {AWAY_KINDS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
@@ -62,21 +65,21 @@ export function AwayDialog({ firmId, away, employee, defaultDay, onClose, onSave
           )}
         </Field>
         <div className="grid-2">
-          <Field label="Od">{(id) => <input id={id} name="date_from" type="date" required defaultValue={from} />}</Field>
-          <Field label="Do (włącznie)">{(id) => <input id={id} name="date_to" type="date" required defaultValue={away?.date_to ?? from} />}</Field>
+          <Field label={t("Od")}>{(id) => <input id={id} name="date_from" type="date" required defaultValue={from} />}</Field>
+          <Field label={t("Do (włącznie)")}>{(id) => <input id={id} name="date_to" type="date" required defaultValue={away?.date_to ?? from} />}</Field>
         </div>
-        <Field label="Uwagi" hint="Bez szczegółów zdrowotnych — wystarczy rodzaj.">
+        <Field label={t("Uwagi")} hint={t("Bez szczegółów zdrowotnych — wystarczy rodzaj.")}>
           {(id) => <input id={id} name="note" type="text" maxLength={200} defaultValue={away?.note ?? ""} />}
         </Field>
-        <p className="hint">Widać od razu, bez akceptacji. Na te dni nie da się zaplanować zmiany, dopóki zgłoszenie istnieje.</p>
+        <p className="hint">{t("Widać od razu, bez akceptacji. Na te dni nie da się zaplanować zmiany, dopóki zgłoszenie istnieje.")}</p>
         <div className="dialog-actions">
           {away && (confirming ? (
-            <button type="button" className="btn danger" onClick={remove}>Tak, usuń zgłoszenie</button>
+            <button type="button" className="btn danger" onClick={remove}>{t("Tak, usuń zgłoszenie")}</button>
           ) : (
-            <button type="button" className="btn danger" onClick={() => setConfirming(true)}>Usuń</button>
+            <button type="button" className="btn danger" onClick={() => setConfirming(true)}>{t("Usuń")}</button>
           ))}
-          <button type="button" className="btn quiet" onClick={onClose}>Anuluj</button>
-          <button className="btn primary">Zapisz</button>
+          <button type="button" className="btn quiet" onClick={onClose}>{t("Anuluj")}</button>
+          <button className="btn primary">{t("Zapisz")}</button>
         </div>
       </form>
     </Dialog>

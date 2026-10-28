@@ -6,6 +6,8 @@ import { hasWebNfc, scanSerials } from "../nfc.ts";
 import type { TapResult } from "../panel/api.ts";
 import "../panel/panel.css";
 import "./tap.css";
+import { locale, t } from "../i18n.ts";
+import { LangSwitch } from "../panel/ui.tsx";
 
 type Info = { point: string; workplace: string; timezone: string };
 type Shown = { kind: "in" | "out" | "bad"; title: string; text: string };
@@ -19,7 +21,7 @@ async function call<T>(url: string, body?: unknown): Promise<T> {
     credentials: "omit", // the secret in the link is the credential, never a session
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error ?? data.detail ?? `Błąd serwera (${response.status})`);
+  if (!response.ok) throw new Error(data.error ?? data.detail ?? t("Błąd serwera ({status})", { status: response.status }));
   return data as T;
 }
 
@@ -52,10 +54,10 @@ export default function Kiosk({ secret }: { secret: string }) {
     busy.current = true;
     try {
       const r = await call<TapResult>(base, { card });
-      setShown({ kind: r.kind, title: `${r.kind_label} ${r.time}`, text: r.repeated ? `${r.name} — już odbito, nie liczymy drugi raz` : r.name });
+      setShown({ kind: r.kind, title: `${r.kind_label} ${r.time}`, text: r.repeated ? `${r.name} — ${t("już odbito, nie liczymy drugi raz")}` : r.name });
     } catch (e) {
       const offline = e instanceof TypeError;
-      setShown({ kind: "bad", title: offline ? "Brak internetu" : "Nie odbito", text: offline ? "Odbicie nie zostało zapisane — powiedz kierownikowi." : (e as Error).message });
+      setShown({ kind: "bad", title: offline ? t("Brak internetu") : t("Nie odbito"), text: offline ? t("Odbicie nie zostało zapisane — powiedz kierownikowi.") : (e as Error).message });
     } finally {
       busy.current = false;
     }
@@ -71,15 +73,15 @@ export default function Kiosk({ secret }: { secret: string }) {
   const startNfc = async () => {
     const controller = new AbortController();
     try {
-      await scanSerials((serial) => punch(serial), () => setShown({ kind: "bad", title: "Nie odczytano", text: "Przyłóż kartę jeszcze raz." }), controller.signal);
+      await scanSerials((serial) => punch(serial), () => setShown({ kind: "bad", title: t("Nie odczytano"), text: t("Przyłóż kartę jeszcze raz.") }), controller.signal);
       setNfcOn(true);
     } catch (e) {
-      setShown({ kind: "bad", title: "NFC niedostępne", text: (e as Error).message });
+      setShown({ kind: "bad", title: t("NFC niedostępne"), text: (e as Error).message });
     }
   };
 
-  const time = new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: info?.timezone }).format(now);
-  if (error) return <div className="panel"><main className="tap"><p className="tap-mark bad">!</p><h1>Kiosk nieaktywny</h1><p>{error}</p></main></div>;
+  const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: info?.timezone }).format(now);
+  if (error) return <div className="panel"><main className="tap"><p className="tap-mark bad">!</p><h1>{t("Kiosk nieaktywny")}</h1><p>{error}</p></main></div>;
   return (
     <div className="panel" onClick={() => input.current?.focus()}>
       <main className="kiosk">
@@ -96,19 +98,20 @@ export default function Kiosk({ secret }: { secret: string }) {
           ) : (
             <>
               <div className="card-icon" aria-hidden="true" />
-              <h1>Przyłóż kartę</h1>
-              <p>Wejście i wyjście — ta sama karta. Wynik zobaczysz tutaj.</p>
+              <h1>{t("Przyłóż kartę")}</h1>
+              <p>{t("Wejście i wyjście — ta sama karta. Wynik zobaczysz tutaj.")}</p>
             </>
           )}
         </section>
         <footer>
           <form onSubmit={submit}>
             {/* the USB reader types here; kept focused */}
-            <input ref={input} className="catcher" autoFocus inputMode="none" autoComplete="off" aria-label="Numer karty" onBlur={() => window.setTimeout(() => input.current?.focus(), 50)} />
+            <input ref={input} className="catcher" autoFocus inputMode="none" autoComplete="off" aria-label={t("Numer karty")} onBlur={() => window.setTimeout(() => input.current?.focus(), 50)} />
           </form>
-          <span>Odbicia z telefonu: naklejka NFC obok.</span>
-          {hasWebNfc() && !nfcOn && <button className="btn" onClick={startNfc}>Czytaj karty NFC tabletu</button>}
-          {nfcOn && <span>NFC tabletu: włączone</span>}
+          <span>{t("Odbicia z telefonu: naklejka NFC obok.")}</span>
+          {hasWebNfc() && !nfcOn && <button className="btn" onClick={startNfc}>{t("Czytaj karty NFC tabletu")}</button>}
+          {nfcOn && <span>{t("NFC tabletu: włączone")}</span>}
+          <LangSwitch />
         </footer>
       </main>
     </div>

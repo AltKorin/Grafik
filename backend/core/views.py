@@ -9,6 +9,7 @@ from rest_framework.throttling import SimpleRateThrottle
 
 from . import accounts
 from .domain_errors import DomainError
+from .i18n import error_body, is_english, tr
 
 
 class PostThrottle(SimpleRateThrottle):
@@ -61,9 +62,9 @@ def session(request):
         return Response({"user": None})
     if request.method == "POST":
         if not isinstance(request.data, dict):
-            return Response({"error": "Oczekiwano obiektu JSON"}, status=400)
+            return Response({"error": tr("Oczekiwano obiektu JSON")}, status=400)
         if csrf_denied(request):
-            return Response({"error": "Błąd weryfikacji CSRF"}, status=403)
+            return Response({"error": tr("Błąd weryfikacji CSRF")}, status=403)
         username = request.data.get("username", "")
         password = request.data.get("password", "")
         if (
@@ -72,12 +73,12 @@ def session(request):
             or len(username) > 150
             or len(password) > 4096
         ):
-            return Response({"error": "Nieprawidłowe pola logowania"}, status=400)
+            return Response({"error": tr("Nieprawidłowe pola logowania")}, status=400)
         if "@" in username:  # self-registered accounts log in with their e-mail, stored lower-case
             username = username.strip().lower()
         user = authenticate(request, username=username, password=password)
         if not user:
-            return Response({"error": "Nieprawidłowy login lub hasło"}, status=400)
+            return Response({"error": tr("Nieprawidłowy login lub hasło")}, status=400)
         login(request, user)
     return Response(me(request))
 
@@ -87,11 +88,11 @@ def session(request):
 @throttle_classes([RegistrationThrottle])
 def register(request):
     if csrf_denied(request):
-        return Response({"error": "Błąd weryfikacji CSRF"}, status=403)
+        return Response({"error": tr("Błąd weryfikacji CSRF")}, status=403)
     try:
         user, firm = accounts.register(request, request.data)
     except DomainError as error:
-        return Response({"error": str(error)}, status=error.status)
+        return Response(error_body(error), status=error.status)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     return Response({**me(request), "workplace": str(firm.id)}, status=201)
 
@@ -102,14 +103,16 @@ def password(request):
     try:
         return Response(accounts.change_password(request, request.data))
     except DomainError as error:
-        return Response({"error": str(error)}, status=error.status)
+        return Response(error_body(error), status=error.status)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def terms(request):
     current = accounts.terms()
-    return Response({"version": current["version"], "html": current["html"]})
+    # The Polish text is the binding one (its hash is what acceptance records); English is a courtesy translation.
+    html = accounts.TERMS_EN_FILE.read_text(encoding="utf-8") if is_english() else current["html"]
+    return Response({"version": current["version"], "html": html})
 
 
 @api_view(["GET"])

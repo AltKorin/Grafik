@@ -1,5 +1,7 @@
 # Grafik
 
+*[English below](#english)*
+
 Darmowy grafik pracy i ewidencja czasu pracy z odbiciami NFC — dla małych firm (restauracja, hotel, sklep).
 
 - **Grafik** — siatka osoby × dni tygodnia, działy z kierownikami, kopiowanie tygodnia, druk.
@@ -9,6 +11,7 @@ Darmowy grafik pracy i ewidencja czasu pracy z odbiciami NFC — dla małych fir
   - naklejka NFC przy wejściu + telefon pracownika (`/nfc/<token>`),
   - tablet-kiosk z czytnikiem USB lub Web NFC i kartami/brelokami (`/kiosk/<sekret>`).
 - **Czas pracy** — plan vs odbicia za miesiąc, „do wyjaśnienia”, korekty z powodem (odbić nie da się edytować), eksport CSV.
+- Polski i angielski (przełącznik PL/EN; język przeglądarki na start).
 - RODO: eksport danych firmy, usunięcie firmy, historia zmian (simple-history) i dziennik logowań.
 
 ## Stos
@@ -32,3 +35,24 @@ Więcej: `PLAN.md` (reguły), `GLOSSARY.md` (słownik), `docs/weryfikacja.md` (b
 ## Licencja
 
 MIT — zob. `LICENSE` i `NOTICE.md`.
+
+---
+
+## English
+
+Free staff scheduling and working-time tracking with NFC punches — for small businesses (restaurants, hotels, shops).
+The interface is available in Polish and English (PL/EN switch; the browser language is the default).
+
+- **Schedule** — people × days of the week, departments with managers, copy last week, print.
+- **Unavailability** — leave, sick leave, unavailable; blocks scheduling a shift on those days.
+- **Requests** — swap, cancellation, different hours, extra shift; the manager's approval changes the schedule at once.
+- **NFC, two ways** — an NFC sticker at the entrance + the employee's own phone (`/nfc/<token>`), or a kiosk tablet with a
+  USB / Web NFC reader and cards or key fobs (`/kiosk/<secret>`).
+- **Working time** — plan vs. punches per month, items to check, corrections with a reason (punches are never edited), CSV export.
+- GDPR: company data export and deletion, change history (simple-history) and a login log.
+
+Stack: Django 6.1 + DRF, PostgreSQL 17, React 19 + Vite, Caddy, Docker Compose. Run it with the commands above
+(`cp .env.example .env`, `docker compose up -d --build`, `seed_demo`). Licence: MIT.
+
+Translations: the Polish text is the key; English lives in `frontend/src/en.ts` (UI) and `backend/grafik/data/en.json`
+(API messages, labels, CSV). `npm run check` and the backend tests fail when a text has no English entry.

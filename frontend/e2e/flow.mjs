@@ -30,8 +30,10 @@ async function login(page, user) {
   await page.getByRole("button", { name: "Zaloguj się" }).click();
 }
 
+// The flow drives the Polish UI; the language follows the browser (i18n.ts), so every page is pl-PL.
+const PL = { locale: "pl-PL" };
 const browser = await chromium.launch({ executablePath: process.env.CHROME, headless: true });
-const desk = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+const desk = await browser.newPage({ ...PL, viewport: { width: 1360, height: 900 } });
 const errors = [];
 desk.on("pageerror", (e) => errors.push(e.message));
 
@@ -98,7 +100,7 @@ await step("zespół: nowy pracownik z loginem, hasło pokazane raz", async () =
   await shot(desk, "04-zespol");
 });
 
-const phone = await browser.newContext({ viewport: { width: 390, height: 800 }, isMobile: true });
+const phone = await browser.newContext({ ...PL, viewport: { width: 390, height: 800 }, isMobile: true });
 const tapPage = await phone.newPage();
 await step("telefon przy naklejce: logowanie, potem odbicie", async () => {
   await tapPage.goto(`${BASE}${tag}`);
@@ -114,7 +116,7 @@ await step("telefon: drugie przyłożenie w ciągu minuty nie liczy się drugi r
   await expectText(tapPage, "nie liczymy go drugi raz");
 });
 
-const tablet = await browser.newPage({ viewport: { width: 1180, height: 820 } });
+const tablet = await browser.newPage({ ...PL, viewport: { width: 1180, height: 820 } });
 await step("kiosk: karta z separatorami odbija, nieznana karta nie", async () => {
   await tablet.goto(`${BASE}${kiosk}`);
   await expectText(tablet, "Przyłóż kartę");
@@ -152,7 +154,7 @@ await step("wniosek pracownika i akceptacja kierownika zmienia grafik", async ()
   await anna.getByLabel("Powód").fill("E2E: wizyta u lekarza");
   await anna.getByRole("button", { name: "Wyślij wniosek" }).click();
   await expectText(anna, "Wniosek wysłany");
-  const boss = await browser.newPage();
+  const boss = await browser.newPage(PL);
   await boss.goto(`${BASE}/panel`);
   await login(boss, "kuchnia-kier");
   await expectText(boss, "Wnioski do rozpatrzenia");
@@ -172,6 +174,58 @@ await step("czas pracy: zestawienie, szczegóły osoby, CSV", async () => {
   const href = await desk.getByRole("link", { name: "Pobierz CSV" }).getAttribute("href");
   const csv = await desk.evaluate(async (u) => (await fetch(u)).text(), href);
   if (!csv.includes("Pracownik;Dział;Plan")) throw new Error("CSV bez nagłówka");
+});
+
+// English: an en-GB browser gets English everywhere. Polish letters left on a page = a text missed by t().
+// Allowed: people and places from the demo data and the company's legal address in the footer and terms.
+const POLISH_DATA = ["Tomasz Wiśniewski", "Piotr Zieliński", "Wejście dla personelu", "Kościerzyna-Wybudowanie", "Gdańsk-Północ", "Gdańsku", "Gdańsk"];
+async function noPolish(page, where) {
+  await page.waitForLoadState("networkidle");
+  let text = await page.locator("body").innerText();
+  for (const d of POLISH_DATA) text = text.replaceAll(d, "");
+  const left = [...new Set(text.match(/\S*[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]\S*/g) ?? [])];
+  if (left.length) throw new Error(`${where}: ${left.slice(0, 8).join(", ")}`);
+}
+
+await step("wersja angielska: strona, panel, CSV, API, kiosk i naklejka bez polskich tekstów", async () => {
+  const en = await browser.newContext({ locale: "en-GB", viewport: { width: 1360, height: 900 } });
+  const page = await en.newPage();
+  page.on("pageerror", (e) => errors.push(e.message));
+  for (const path of ["/", "/rejestracja", "/regulamin"]) {
+    await page.goto(`${BASE}${path}`);
+    await noPolish(page, path);
+  }
+  await expectText(page, "Polish version is binding");
+  await page.goto(`${BASE}/panel`);
+  await page.getByLabel("Login or e-mail").fill("dyrektor-demo");
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Log in" }).click();
+  for (const name of ["Today", "Schedule", "Requests", "Working time", "Team & NFC"]) {
+    // client-side route: wait for its data, or the scan would only see an empty page
+    await Promise.all([page.waitForResponse((r) => r.url().includes("/api/w/")), page.getByRole("link", { name, exact: true }).click()]);
+    await page.locator(".settings-list li, .report tbody tr, .week tbody tr, .group-list li, .card").first().waitFor();
+    await noPolish(page, name);
+  }
+  await shot(page, "12-en-zespol");
+  await page.getByRole("link", { name: "Working time", exact: true }).click();
+  await page.getByRole("row", { name: /Anna Nowak/ }).click();
+  await expectText(page, "Card at the kiosk"); // punch sources and kinds come translated from the API
+  await noPolish(page, "Working time → person");
+  await page.keyboard.press("Escape");
+  const href = await page.getByRole("link", { name: "Download CSV" }).getAttribute("href");
+  const csv = await page.evaluate(async (u) => (await fetch(u)).text(), href);
+  if (!csv.includes("Employee;Department;Plan")) throw new Error(`CSV not in English: ${csv.slice(0, 60)}`);
+  const answer = await page.evaluate(async () => (await fetch("/api/w/00000000-0000-0000-0000-000000000000/week/")).json());
+  if (answer.error !== "Company: not found") throw new Error(`API not in English: ${JSON.stringify(answer)}`);
+  await page.goto(`${BASE}${kiosk}`);
+  await noPolish(page, "kiosk");
+  await shot(page, "13-en-kiosk");
+  await page.goto(`${BASE}${tag}`);
+  await noPolish(page, "naklejka");
+  await page.goto(`${BASE}/panel`);
+  await page.getByRole("button", { name: "PL" }).click();
+  await expectText(page, "Zespół i NFC");
+  await en.close();
 });
 
 await step("brak błędów JS na stronach", async () => {

@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.domain_errors import DomainError
+from core.i18n import MONTHS_EN, error_body, is_english, tr
 
 from . import domain
 from .access import employee_in, manages, require_manager, sees, workplace_access
@@ -21,7 +22,7 @@ def hm(t):
 
 
 def day_label(d):
-    return f"{d.day} {MONTHS[d.month - 1]}"
+    return f"{d.day} {(MONTHS_EN if is_english() else MONTHS)[d.month - 1]}"
 
 
 def range_label(a, b):
@@ -35,7 +36,7 @@ def shift_json(s):
 
 def unavailability_json(u):
     return {"id": str(u.id), "employee": str(u.employee_id), "date_from": u.date_from.isoformat(),
-            "date_to": u.date_to.isoformat(), "kind": u.kind, "kind_label": u.get_kind_display(), "note": u.note}
+            "date_to": u.date_to.isoformat(), "kind": u.kind, "kind_label": tr(u.get_kind_display()), "note": u.note}
 
 
 def visible_people(w, department=None):
@@ -73,16 +74,16 @@ def check_shift(w, employee, day, start, end, exclude=()):
     away = employee.unavailabilities.filter(date_from__lte=day, date_to__gte=day).first()
     if away:
         raise DomainError(
-            f"{employee.name} zgłosił(a) {away.get_kind_display().lower()} ({range_label(away.date_from, away.date_to)}). "
-            "Zmiany na ten dzień nie da się zapisać — poproś o wycofanie zgłoszenia.", 409)
+            "{name} zgłosił(a): {kind} ({days}). Zmiany na ten dzień nie da się zapisać — poproś o wycofanie zgłoszenia.",
+            409, name=employee.name, kind=away.get_kind_display(), days=range_label(away.date_from, away.date_to))
     tz = domain.zone(w.timezone)
     begins, ends = domain.shift_span(day, start, end, tz)
     nearby = employee.shifts.filter(date__range=(day - timedelta(days=1), day + timedelta(days=1))).exclude(pk__in=exclude)
     for other in nearby:
         a, b = domain.shift_span(other.date, other.start_time, other.end_time, tz)
         if a < ends and begins < b:
-            raise DomainError(f"{employee.name} ma już zmianę {day_label(other.date)} "
-                              f"{hm(other.start_time)}–{hm(other.end_time)}, która się nakłada", 409)
+            raise DomainError("{name} ma już zmianę {day} {start}–{end}, która się nakłada", 409, name=employee.name,
+                              day=day_label(other.date), start=hm(other.start_time), end=hm(other.end_time))
 
 
 def shift_values(data, w):
@@ -155,7 +156,7 @@ def copy_week(user, workplace_id, data):
                 Shift.objects.create(employee=s.employee, date=day, start_time=s.start_time, end_time=s.end_time, notes=s.notes)
             copied += 1
         except DomainError as error:
-            skipped.append(str(error))
+            skipped.append(error_body(error)["error"])
     return {"copied": copied, "skipped": skipped}
 
 
@@ -240,8 +241,8 @@ def request_json(r, w):
         return {**shift_json(s), "name": s.employee.name} if s else None
 
     return {
-        "id": str(r.id), "kind": r.kind, "kind_label": r.get_kind_display(), "status": r.status,
-        "status_label": r.get_status_display(), "employee": str(r.employee_id), "name": r.employee.name,
+        "id": str(r.id), "kind": r.kind, "kind_label": tr(r.get_kind_display()), "status": r.status,
+        "status_label": tr(r.get_status_display()), "employee": str(r.employee_id), "name": r.employee.name,
         "shift": brief(r.shift), "swap_shift": brief(r.swap_shift),
         "new_date": r.new_date.isoformat() if r.new_date else None, "new_start": hm(r.new_start), "new_end": hm(r.new_end),
         "reason": r.reason, "review_note": r.review_note, "reviewed_by": r.reviewed_by.name if r.reviewed_by else None,
@@ -313,7 +314,7 @@ def request_in(w, request_id):
 
 def pending(r):
     if r.status != "pending":  # approving twice must not apply twice (CLAUDE.md: idempotence)
-        raise DomainError(f"Wniosek jest już {r.get_status_display().lower()}", 409)
+        raise DomainError("Wniosek ma już status: {state}", 409, state=r.get_status_display())
 
 
 @transaction.atomic

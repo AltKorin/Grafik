@@ -20,7 +20,7 @@ def identifier(value, what="Obiekt"):
     try:
         return uuid.UUID(str(value))
     except (ValueError, TypeError, AttributeError):
-        raise DomainError(f"{what}: nie znaleziono", 404) from None
+        raise DomainError("{what}: nie znaleziono", 404, what=what) from None
 
 
 def text(data, key, limit, required=False, label=None):
@@ -29,12 +29,12 @@ def text(data, key, limit, required=False, label=None):
     if value is None:
         value = ""
     if not isinstance(value, str):
-        raise DomainError(f"Pole „{label}”: oczekiwano tekstu")
+        raise DomainError("Pole „{label}”: oczekiwano tekstu", label=label)
     value = storage_string(value).strip()
     if required and not value:
-        raise DomainError(f"Pole „{label}” jest wymagane")
+        raise DomainError("Pole „{label}” jest wymagane", label=label)
     if len(value) > limit:
-        raise DomainError(f"Pole „{label}”: maksymalnie {limit} znaków")
+        raise DomainError("Pole „{label}”: maksymalnie {limit} znaków", label=label, limit=limit)
     return value
 
 
@@ -44,7 +44,7 @@ def calendar_day(value, label="data"):
             return date.fromisoformat(value)
     except ValueError:
         pass
-    raise DomainError(f"Pole „{label}”: data w formacie RRRR-MM-DD")
+    raise DomainError("Pole „{label}”: data w formacie RRRR-MM-DD", label=label)
 
 
 def clock_time(value, label="godzina"):
@@ -53,7 +53,7 @@ def clock_time(value, label="godzina"):
             return time.fromisoformat(value).replace(second=0, microsecond=0)
     except ValueError:
         pass
-    raise DomainError(f"Pole „{label}”: godzina w formacie GG:MM")
+    raise DomainError("Pole „{label}”: godzina w formacie GG:MM", label=label)
 
 
 def zone(name):

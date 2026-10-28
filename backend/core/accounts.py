@@ -27,6 +27,7 @@ from .models import TermsAcceptance
 from .signals import client_ip
 
 TERMS_FILE = Path(__file__).resolve().parent.parent / "grafik" / "data" / "regulamin.html"
+TERMS_EN_FILE = TERMS_FILE.with_name("regulamin.en.html")
 
 
 @cache
@@ -112,7 +113,7 @@ def add_firm(request, data):
         raise DomainError("Zaakceptuj regulamin, żeby założyć firmę")
     user = get_user_model().objects.select_for_update().get(pk=request.user.pk)  # two submits at once count once
     if Employee.objects.filter(user=user, role="dyrektor").count() >= settings.MAX_FIRMS_PER_ACCOUNT:
-        raise DomainError(f"Jedno konto może prowadzić najwyżej {settings.MAX_FIRMS_PER_ACCOUNT} firm", 409)
+        raise DomainError("Jedno konto może prowadzić najwyżej {limit} firm", 409, limit=settings.MAX_FIRMS_PER_ACCOUNT)
     return found_firm(request, user, firm_name, person)
 
 

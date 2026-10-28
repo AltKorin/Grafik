@@ -4,6 +4,7 @@ import { api, useApi, type Away, type Department, type Shift, type Week, type Wo
 import { AwayDialog } from "./Away.tsx";
 import { addDays, dayLabel, hours, inRange, shiftMinutes } from "./time.ts";
 import { Dialog, Field, dateRange, useToast } from "./ui.tsx";
+import { t } from "../i18n.ts";
 
 type Person = Week["people"][number];
 type Editing =
@@ -34,7 +35,8 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
     if (!w) return;
     try {
       const r = await api.post<{ copied: number; skipped: string[] }>(`/w/${firm.id}/week/copy/`, { week: w.week });
-      toast(r.skipped.length ? `Skopiowano ${r.copied}. Pominięto ${r.skipped.length}: ${r.skipped[0]}` : `Skopiowano zmian: ${r.copied}.`);
+      toast(r.skipped.length ? t("Skopiowano {copied}. Pominięto {skipped}: {first}", { copied: r.copied, skipped: r.skipped.length, first: r.skipped[0] })
+        : t("Skopiowano zmian: {copied}.", { copied: r.copied }));
       data.reload();
     } catch (err) {
       toast((err as Error).message);
@@ -45,22 +47,22 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
     <main className="page" style={{ maxWidth: 1400 }}>
       <div className="page-head">
         <div>
-          <h1>Grafik</h1>
-          <p>{manager ? "Kliknij dzień, żeby dodać zmianę; kliknij zmianę, żeby ją zmienić lub usunąć." : "Grafik twojego działu. Zmiany zgłaszasz we Wnioskach."}</p>
+          <h1>{t("Grafik")}</h1>
+          <p>{manager ? t("Kliknij dzień, żeby dodać zmianę; kliknij zmianę, żeby ją zmienić lub usunąć.") : t("Grafik twojego działu. Zmiany zgłaszasz we Wnioskach.")}</p>
         </div>
         <div className="actions">
-          {manager && <button className="btn" onClick={copy} title="Dodaje zmiany z poprzedniego tygodnia; istniejące zostają, konflikty są pomijane">Skopiuj poprzedni tydzień</button>}
-          <button className="btn" onClick={() => window.print()}>Drukuj</button>
+          {manager && <button className="btn" onClick={copy} title={t("Dodaje zmiany z poprzedniego tygodnia; istniejące zostają, konflikty są pomijane")}>{t("Skopiuj poprzedni tydzień")}</button>}
+          <button className="btn" onClick={() => window.print()}>{t("Drukuj")}</button>
         </div>
       </div>
       <div className="week-nav">
-        <button className="btn" onClick={() => w && setWeek(addDays(w.week, -7))} aria-label="Poprzedni tydzień">←</button>
+        <button className="btn" onClick={() => w && setWeek(addDays(w.week, -7))} aria-label={t("Poprzedni tydzień")}>←</button>
         <strong>{w ? dateRange(w.days[0], w.days[6]) : "…"}</strong>
-        <button className="btn" onClick={() => w && setWeek(addDays(w.week, 7))} aria-label="Następny tydzień">→</button>
-        <button className="btn quiet" onClick={() => setWeek(null)}>Ten tydzień</button>
+        <button className="btn" onClick={() => w && setWeek(addDays(w.week, 7))} aria-label={t("Następny tydzień")}>→</button>
+        <button className="btn quiet" onClick={() => setWeek(null)}>{t("Ten tydzień")}</button>
         {director && (departments.data ?? []).length > 0 && (
-          <select value={department} onChange={(e) => setDepartment(e.target.value)} aria-label="Dział">
-            <option value="">Wszystkie działy</option>
+          <select value={department} onChange={(e) => setDepartment(e.target.value)} aria-label={t("Dział")}>
+            <option value="">{t("Wszystkie działy")}</option>
             {departments.data!.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         )}
@@ -68,8 +70,8 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
       {data.error && <p className="error">{data.error}</p>}
       {w && w.people.length === 0 && (
         <div className="empty">
-          <p>W grafiku nie ma jeszcze nikogo.</p>
-          {director && <p className="hint">Dodaj działy i pracowników w zakładce „Zespół i NFC”.</p>}
+          <p>{t("W grafiku nie ma jeszcze nikogo.")}</p>
+          {director && <p className="hint">{t("Dodaj działy i pracowników w zakładce „Zespół i NFC”.")}</p>}
         </div>
       )}
       {w && w.people.length > 0 && (
@@ -77,7 +79,7 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
           <table className="week">
             <thead>
               <tr>
-                <th>Osoba</th>
+                <th>{t("Osoba")}</th>
                 {w.days.map((d) => <th key={d} className={d === w.today ? "today" : undefined}>{dayLabel(d)}</th>)}
               </tr>
             </thead>
@@ -91,7 +93,7 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
                       <div className="person">
                         {p.department && <span className="swatch" style={{ background: colors[p.department] }} />}
                         {p.name}
-                        <small className="num">{hours(total)} h w tygodniu</small>
+                        <small className="num">{t("{h} h w tygodniu", { h: hours(total) })}</small>
                       </div>
                     </td>
                     {w.days.map((d) => {
@@ -112,7 +114,7 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
                                 className={`chip${away.length ? " clash" : ""}`}
                                 style={{ ["--dept" as string]: p.department ? colors[p.department] : undefined }}
                                 disabled={!p.editable}
-                                title={away.length ? "Konflikt: zgłoszona niedyspozycyjność" : undefined}
+                                title={away.length ? t("Konflikt: zgłoszona niedyspozycyjność") : undefined}
                                 onClick={() => setEditing({ kind: "shift", person: p, day: d, shift: s })}
                               >
                                 {s.start}–{s.end}
@@ -120,7 +122,7 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
                               </button>
                             ))}
                             {p.editable && (
-                              <button className="add no-print" aria-label={`Dodaj zmianę: ${p.name}, ${dayLabel(d)}`} onClick={() => setEditing({ kind: "shift", person: p, day: d, shift: null })}>
+                              <button className="add no-print" aria-label={`${t("Dodaj zmianę")}: ${p.name}, ${dayLabel(d)}`} onClick={() => setEditing({ kind: "shift", person: p, day: d, shift: null })}>
                                 <span className="add-hint">+</span>
                               </button>
                             )}
@@ -182,7 +184,7 @@ function ShiftDialog({ firmId, editing, presets, onClose, onSaved, onAway }: {
     try {
       if (shift) await api.patch(`/w/${firmId}/shifts/${shift.id}/`, body);
       else await api.post(`/w/${firmId}/shifts/`, body);
-      toast(shift ? "Zmiana zapisana." : `Dodano zmianę: ${person.name}, ${start}–${end}.`);
+      toast(shift ? t("Zmiana zapisana.") : t("Dodano zmianę: {name}, {start}–{end}.", { name: person.name, start, end }));
       onSaved();
       onClose();
     } catch (err) {
@@ -192,7 +194,7 @@ function ShiftDialog({ firmId, editing, presets, onClose, onSaved, onAway }: {
   const remove = async () => {
     try {
       await api.delete(`/w/${firmId}/shifts/${shift!.id}/`, {});
-      toast("Zmiana usunięta z grafiku.");
+      toast(t("Zmiana usunięta z grafiku."));
       onSaved();
       onClose();
     } catch (err) {
@@ -201,10 +203,10 @@ function ShiftDialog({ firmId, editing, presets, onClose, onSaved, onAway }: {
   };
 
   return (
-    <Dialog open onClose={onClose} title={`${shift ? "Zmiana" : "Nowa zmiana"} — ${person.name}`}>
+    <Dialog open onClose={onClose} title={`${shift ? t("Zmiana") : t("Nowa zmiana")} — ${person.name}`}>
       <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
         {error && <p className="error">{error}</p>}
-        <Field label="Dzień">{(id) => <input id={id} name="date" type="date" required defaultValue={shift?.date ?? editing.day} />}</Field>
+        <Field label={t("Dzień")}>{(id) => <input id={id} name="date" type="date" required defaultValue={shift?.date ?? editing.day} />}</Field>
         {presets.length > 0 && (
           <div className="inline-form">
             {presets.map((p) => (
@@ -215,28 +217,28 @@ function ShiftDialog({ firmId, editing, presets, onClose, onSaved, onAway }: {
           </div>
         )}
         <div className="grid-2">
-          <Field label="Od">{(id) => <input id={id} type="time" required value={start} onChange={(e) => setStart(e.target.value)} />}</Field>
-          <Field label="Do" hint={end && start && end <= start && start !== end ? "Kończy się następnego dnia." : undefined}>
+          <Field label={t("Od")}>{(id) => <input id={id} type="time" required value={start} onChange={(e) => setStart(e.target.value)} />}</Field>
+          <Field label={t("Do")} hint={end && start && end <= start && start !== end ? t("Kończy się następnego dnia.") : undefined}>
             {(id) => <input id={id} type="time" required value={end} onChange={(e) => setEnd(e.target.value)} />}
           </Field>
         </div>
-        <p className="hint num">Długość: {hours(minutes)} h</p>
-        <Field label="Uwagi" hint="Np. „pomoc w kuchni”, „szkolenie”.">
+        <p className="hint num">{t("Długość:")} {hours(minutes)} h</p>
+        <Field label={t("Uwagi")} hint={t("Np. „pomoc w kuchni”, „szkolenie”.")}>
           {(id) => <input id={id} name="notes" type="text" maxLength={200} defaultValue={shift?.notes ?? ""} />}
         </Field>
         {!shift && (
           <button type="button" className="btn quiet" style={{ justifySelf: "start" }} onClick={onAway}>
-            Zamiast tego: zgłoś urlop / L4 tej osoby
+            {t("Zamiast tego: zgłoś urlop / L4 tej osoby")}
           </button>
         )}
         <div className="dialog-actions">
           {shift && (confirming ? (
-            <button type="button" className="btn danger" onClick={remove}>Tak, usuń zmianę</button>
+            <button type="button" className="btn danger" onClick={remove}>{t("Tak, usuń zmianę")}</button>
           ) : (
-            <button type="button" className="btn danger" onClick={() => setConfirming(true)}>Usuń</button>
+            <button type="button" className="btn danger" onClick={() => setConfirming(true)}>{t("Usuń")}</button>
           ))}
-          <button type="button" className="btn quiet" onClick={onClose}>Anuluj</button>
-          <button className="btn primary">{shift ? "Zapisz" : "Dodaj zmianę"}</button>
+          <button type="button" className="btn quiet" onClick={onClose}>{t("Anuluj")}</button>
+          <button className="btn primary">{shift ? t("Zapisz") : t("Dodaj zmianę")}</button>
         </div>
       </form>
     </Dialog>

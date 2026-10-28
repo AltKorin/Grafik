@@ -10,6 +10,7 @@ from rest_framework.throttling import AnonRateThrottle
 
 from core import accounts
 from core.domain_errors import DomainError
+from core.i18n import error_body
 
 from . import clock, schedule, team
 
@@ -24,7 +25,7 @@ def answer(fn):
         try:
             result = fn(request, *args, **kwargs)
         except DomainError as error:
-            return Response({"error": str(error)}, status=error.status)
+            return Response(error_body(error), status=error.status)
         return result if isinstance(result, HttpResponse) else Response(result)
 
     return view

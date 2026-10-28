@@ -6,6 +6,7 @@ import type { TapResult } from "../panel/api.ts";
 import { Login } from "../panel/Panel.tsx";
 import "../panel/panel.css";
 import "./tap.css";
+import { t } from "../i18n.ts";
 
 type Info = { point: string; workplace: string; signed_in: boolean; employee: string | null };
 
@@ -34,7 +35,7 @@ export default function Tap({ token }: { token: string }) {
       setInfo(i);
       if (i.signed_in && i.employee) punch();
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 404 ? err.message : "Brak połączenia — odbicie nie zostało zapisane. Spróbuj jeszcze raz.");
+      setError(err instanceof ApiError && err.status === 404 ? err.message : t("Brak połączenia — odbicie nie zostało zapisane. Spróbuj jeszcze raz."));
     }
   };
   useEffect(() => {
@@ -46,9 +47,9 @@ export default function Tap({ token }: { token: string }) {
       <div className="panel">
         <main className="tap">
           <p className="tap-mark bad">!</p>
-          <h1>Nie odbito</h1>
+          <h1>{t("Nie odbito")}</h1>
           <p>{error}</p>
-          <a className="btn" href="/panel">Przejdź do panelu</a>
+          <a className="btn" href="/panel">{t("Przejdź do panelu")}</a>
         </main>
       </div>
     );
@@ -56,7 +57,7 @@ export default function Tap({ token }: { token: string }) {
   if (!info.signed_in)
     return (
       <div className="panel">
-        <Login title={info.point} lead={`${info.workplace}: zaloguj się raz na tym telefonie — potem wystarczy przyłożyć go do naklejki.`} onLogin={() => load()} />
+        <Login title={info.point} lead={`${info.workplace}: ${t("zaloguj się raz na tym telefonie — potem wystarczy przyłożyć go do naklejki.")}`} onLogin={() => load()} />
       </div>
     );
   if (!info.employee)
@@ -64,13 +65,13 @@ export default function Tap({ token }: { token: string }) {
       <div className="panel">
         <main className="tap">
           <p className="tap-mark bad">!</p>
-          <h1>To konto nie jest w zespole</h1>
-          <p>Naklejka należy do firmy {info.workplace}. Zaloguj się kontem nadanym przez tę firmę.</p>
-          <a className="btn" href="/panel">Przejdź do panelu</a>
+          <h1>{t("To konto nie jest w zespole")}</h1>
+          <p>{t("Naklejka należy do firmy {firm}. Zaloguj się kontem nadanym przez tę firmę.", { firm: info.workplace })}</p>
+          <a className="btn" href="/panel">{t("Przejdź do panelu")}</a>
         </main>
       </div>
     );
-  if (!result) return <div className="panel"><main className="tap"><p>Odbijam…</p></main></div>;
+  if (!result) return <div className="panel"><main className="tap"><p>{t("Odbijam…")}</p></main></div>;
   return (
     <div className="panel">
       <main className={`tap ${result.kind}`}>
@@ -79,8 +80,8 @@ export default function Tap({ token }: { token: string }) {
         <p>
           <strong>{result.name}</strong> · {info.point}
         </p>
-        {result.repeated && <p className="hint">To odbicie było już zapisane chwilę temu — nie liczymy go drugi raz.</p>}
-        <a className="btn" href="/panel">Mój grafik</a>
+        {result.repeated && <p className="hint">{t("To odbicie było już zapisane chwilę temu — nie liczymy go drugi raz.")}</p>}
+        <a className="btn" href="/panel">{t("Mój grafik")}</a>
       </main>
     </div>
   );

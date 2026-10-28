@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.domain_errors import DomainError
+from core.i18n import tr
 
 from . import domain, team
 from .access import employee_in, manages, require_manager, sees, workplace_access
@@ -28,7 +29,7 @@ def local_hm(moment, tz):
 
 
 def punch_result(p, repeated, tz):
-    return {"name": p.employee.name, "kind": p.kind, "kind_label": p.get_kind_display(), "at": p.at.isoformat(),
+    return {"name": p.employee.name, "kind": p.kind, "kind_label": tr(p.get_kind_display()), "at": p.at.isoformat(),
             "time": local_hm(p.at, tz), "repeated": repeated}
 
 
@@ -70,7 +71,7 @@ def tag_punch(user, tag_token):
         raise DomainError("Zaloguj się, żeby odbić", 401)
     me = Employee.objects.select_related("workplace").filter(workplace=p.workplace, user=user, active=True).first()
     if not me:
-        raise DomainError(f"To konto nie należy do pracowników firmy {p.workplace.name}", 403)
+        raise DomainError("To konto nie należy do pracowników firmy {firm}", 403, firm=p.workplace.name)
     return record(me, "tag", p)
 
 
@@ -111,13 +112,13 @@ def local_moment(value, tz, label="czas"):
                 return moment.replace(tzinfo=tz, second=0, microsecond=0)
     except ValueError:
         pass
-    raise DomainError(f"Pole „{label}”: data i godzina w formacie RRRR-MM-DDTGG:MM")
+    raise DomainError("Pole „{label}”: data i godzina w formacie RRRR-MM-DDTGG:MM", label=label)
 
 
 def punch_json(p, tz):
-    return {"id": p.pk, "employee": str(p.employee_id), "kind": p.kind, "kind_label": p.get_kind_display(),
+    return {"id": p.pk, "employee": str(p.employee_id), "kind": p.kind, "kind_label": tr(p.get_kind_display()),
             "at": p.at.isoformat(), "local": p.at.astimezone(tz).strftime("%Y-%m-%d %H:%M"), "source": p.source,
-            "source_label": p.get_source_display(), "point": p.point.name if p.point else None, "note": p.note,
+            "source_label": tr(p.get_source_display()), "point": p.point.name if p.point else None, "note": p.note,
             "voids": p.voids_id, "voided": hasattr(p, "voided_by"),
             "recorded_by": p.recorded_by.get_username() if p.recorded_by and p.source == "manual" else None}
 
@@ -184,7 +185,7 @@ def day_sessions(w, people, first, last):
 
 def session_json(s, tz):
     return {"start": local_hm(s["start"], tz) if s["start"] else None, "end": local_hm(s["end"], tz) if s["end"] else None,
-            "minutes": domain.worked_minutes(s), "problem": s["problem"], "ongoing": s["start"] and not s["end"] and not s["problem"]}
+            "minutes": domain.worked_minutes(s), "problem": s["problem"] and tr(s["problem"]), "ongoing": s["start"] and not s["end"] and not s["problem"]}
 
 
 def month_bounds(params, w):
@@ -250,17 +251,18 @@ def report_csv(user, workplace_id, params):
     out = io.StringIO()
     out.write("﻿")  # Excel reads UTF-8 only with the BOM
     writer = csv.writer(out, delimiter=";")
-    writer.writerow(["Data", "Pracownik", "Dział", "Plan", "Plan (godz.)", "Odbicia", "Przepracowane (godz.)", "Uwagi"])
+    writer.writerow([tr("Data"), tr("Pracownik"), tr("Dział"), tr("Plan"), tr("Plan (godz.)"), tr("Odbicia"),
+                     tr("Przepracowane (godz.)"), tr("Uwagi")])
     for person in data["people"]:
         for d in person["days"]:
             writer.writerow([
                 d["date"], person["name"], person["department"] or "",
                 ", ".join(f"{s['start']}–{s['end']}" for s in d["shifts"]), hours(d["planned"]),
                 ", ".join(f"{s['start'] or '?'}–{s['end'] or '?'}" for s in d["sessions"]), hours(d["worked"]),
-                ", ".join(s["problem"] for s in d["sessions"] if s["problem"]),
+                ", ".join(s["problem"] for s in d["sessions"] if s["problem"]),  # translated by report()
             ])
-        writer.writerow(["RAZEM", person["name"], person["department"] or "", "", hours(person["planned"]), "",
-                         hours(person["worked"]), f"{person['problems']} do wyjaśnienia" if person["problems"] else ""])
+        writer.writerow([tr("RAZEM"), person["name"], person["department"] or "", "", hours(person["planned"]), "",
+                         hours(person["worked"]), tr("{count} do wyjaśnienia", count=person["problems"]) if person["problems"] else ""])
     return data["month"], out.getvalue()
 
 

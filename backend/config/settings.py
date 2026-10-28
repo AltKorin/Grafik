@@ -36,6 +36,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # PL/EN: django_language cookie, then Accept-Language
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -107,6 +108,7 @@ REST_FRAMEWORK = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LANGUAGE_CODE = "pl"
+LANGUAGES = [("pl", "Polski"), ("en", "English")]
 TIME_ZONE = "UTC"  # each firm carries its own timezone
 USE_TZ = True
 STATIC_URL = "/static/"

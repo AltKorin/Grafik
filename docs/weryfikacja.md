@@ -4,12 +4,12 @@
 
 | Bramka | Wynik | Jak uruchomić |
 | --- | --- | --- |
-| Testy backendu (SQLite) | 59/59 | `cd backend && DEBUG=1 ../.venv/bin/python manage.py test grafik core` |
-| Testy backendu (PostgreSQL, kontener) | 55/55 | `docker compose exec -T api python manage.py test grafik core` |
-| Czyste reguły czasu we froncie | OK | `cd frontend && npm run check` |
+| Testy backendu (SQLite) | 62/62 (w tym kompletność EN) | `cd backend && DEBUG=1 ../.venv/bin/python manage.py test grafik core` |
+| Testy backendu (PostgreSQL, kontener) | 62/62 | `docker compose exec -T api python manage.py test grafik core` |
+| Czyste reguły czasu we froncie + kompletność EN (`i18n.check`, 349 tekstów) | OK | `cd frontend && npm run check` |
 | Build frontu (tsc + vite) | OK | `npm run build` |
 | E2E w Chromium (12 kroków) — Vite dev | 12/12 | `CHROME=… BASE=http://127.0.0.1:5180 npm run e2e` |
-| E2E na stosie Docker (Caddy + CSP + Postgres) | 12/12 | `CHROME=… BASE=http://127.0.0.1:8095 npm run e2e` |
+| E2E na stosie Docker (Caddy + CSP + Postgres), w tym przejście EN | 13/13 | `CHROME=… BASE=http://127.0.0.1:8095 npm run e2e` |
 | Smoke z zewnątrz | OK (8/8, bez HTTPS) | `deploy/smoke.sh http://127.0.0.1:8095` |
 | `check --deploy` | 0 błędów (5 ostrzeżeń = brak HTTPS lokalnie) | w kontenerze |
 

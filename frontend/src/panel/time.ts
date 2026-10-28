@@ -1,3 +1,5 @@
+import { lang, locale } from "../i18n.ts";
+
 // Pure date/time helpers for the panel; ISO dates (RRRR-MM-DD) as plain strings, UTC noon to dodge DST.
 const noon = (d: string) => new Date(`${d}T12:00:00Z`);
 
@@ -18,12 +20,13 @@ export function hours(minutes: number): string {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
-const weekday = new Intl.DateTimeFormat("pl-PL", { weekday: "short", timeZone: "UTC" });
-const monthYear = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric", timeZone: "UTC" });
+const weekday = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
+const monthYear = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" });
 
-/** "2026-11-03" → "wt 3.11" */
+/** "2026-11-03" → "wt 3.11" (en: "Tue 3/11") */
 export function dayLabel(day: string): string {
-  return `${weekday.format(noon(day)).replace(".", "")} ${Number(day.slice(8))}.${day.slice(5, 7)}`;
+  const sep = lang === "en" ? "/" : ".";
+  return `${weekday.format(noon(day)).replace(".", "")} ${Number(day.slice(8))}${sep}${day.slice(5, 7)}`;
 }
 
 /** "2026-11" → "listopad 2026" */

@@ -125,8 +125,8 @@ def delete_department(user, workplace_id, department_id):
     d = department_in(w, department_id)
     people = list(d.employees.filter(active=True).values_list("name", flat=True))
     if people:
-        raise DomainError(f"W dziale są osoby: {', '.join(people)}. Przenieś je do innego działu, "
-                          "wtedy dział da się usunąć.", 409)
+        raise DomainError("W dziale są osoby: {people}. Przenieś je do innego działu, wtedy dział da się usunąć.", 409,
+                          people=", ".join(people))
     d.delete()  # archived people keep working records, just without a department (SET_NULL)
     return {"deleted": True}
 
@@ -304,7 +304,7 @@ def assign_card(user, workplace_id, employee_id, data):
     uid = normalize_card(domain.body_object(data).get("uid"))
     holder = w.employees.filter(card_uid=uid).exclude(pk=e.pk).first()
     if holder:
-        raise DomainError(f"Ta karta jest już przypisana: {holder.name}. Najpierw odbierz ją tej osobie.", 409)
+        raise DomainError("Ta karta jest już przypisana: {name}. Najpierw odbierz ją tej osobie.", 409, name=holder.name)
     e.card_uid = uid
     e.save(update_fields=["card_uid"])
     return employee_json(e, w)

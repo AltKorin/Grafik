@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { lang, locale, setLanguage, t } from "../i18n.ts";
 
 /** Native <dialog>: focus trap, Esc and backdrop for free. `side` renders it as a drawer. */
 export function Dialog({ open, onClose, title, children, side = false, wide = false }: {
@@ -31,7 +32,7 @@ export function Dialog({ open, onClose, title, children, side = false, wide = fa
       <div className="dialog-inner">
         <header className="dialog-head">
           <h2>{title}</h2>
-          <button type="button" className="icon-button" onClick={onClose} aria-label="Zamknij">
+          <button type="button" className="icon-button" onClick={onClose} aria-label={t("Zamknij")}>
             ×
           </button>
         </header>
@@ -108,19 +109,32 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const dayMonth = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", timeZone: "UTC" });
-const dayOnly = new Intl.DateTimeFormat("pl-PL", { day: "numeric", timeZone: "UTC" });
-const weekdayShort = new Intl.DateTimeFormat("pl-PL", { weekday: "short", timeZone: "UTC" });
+const dayMonth = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", timeZone: "UTC" });
+const dayOnly = new Intl.DateTimeFormat(locale, { day: "numeric", timeZone: "UTC" });
+const weekdayShort = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
 const utcNoon = (d: string) => new Date(`${d}T12:00:00Z`);
 
-/** "9–11 października", "30 września – 2 października", "10 października". */
+/** "9–11 października", "30 września – 2 października", "10 października" (en: "9–11 October"). */
 export function dateRange(first: string, last: string): string {
   if (first === last) return dayMonth.format(utcNoon(first));
-  if (first.slice(0, 7) === last.slice(0, 7)) return `${dayOnly.format(utcNoon(first))}–${dayMonth.format(utcNoon(last))}`;
+  if (first.slice(0, 7) === last.slice(0, 7) && lang === "pl") return `${dayOnly.format(utcNoon(first))}–${dayMonth.format(utcNoon(last))}`;
   return `${dayMonth.format(utcNoon(first))} – ${dayMonth.format(utcNoon(last))}`;
 }
 
 export function dayTab(date: string): { weekday: string; date: string } {
   const w = weekdayShort.format(utcNoon(date)).replace(".", "");
-  return { weekday: w.charAt(0).toUpperCase() + w.slice(1), date: `${Number(date.slice(8))}.${date.slice(5, 7)}` };
+  return { weekday: w.charAt(0).toUpperCase() + w.slice(1), date: `${Number(date.slice(8))}${lang === "en" ? "/" : "."}${date.slice(5, 7)}` };
+}
+
+/** PL | EN — the current one is pressed; switching reloads (i18n.ts). */
+export function LangSwitch({ className = "lang" }: { className?: string }) {
+  return (
+    <span className={className} role="group" aria-label="Język / Language">
+      {(["pl", "en"] as const).map((l) => (
+        <button key={l} type="button" className="link" aria-pressed={l === lang} onClick={() => l !== lang && setLanguage(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </span>
+  );
 }

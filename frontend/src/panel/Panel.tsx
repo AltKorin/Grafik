@@ -8,7 +8,8 @@ import Time from "./Time.tsx";
 import Today from "./Today.tsx";
 import WeekPage from "./Week.tsx";
 import { go, linkTo, usePath } from "./router.ts";
-import { Field, ToastProvider } from "./ui.tsx";
+import { Field, LangSwitch, ToastProvider } from "./ui.tsx";
+import { t } from "../i18n.ts";
 import "./panel.css";
 
 const FIRM_KEY = "panel:firm";
@@ -27,7 +28,7 @@ export default function Panel() {
   );
 }
 
-export function Login({ onLogin, title = "Grafik", lead = "Zaloguj się, żeby zobaczyć grafik i swój czas pracy." }: {
+export function Login({ onLogin, title = t("Grafik"), lead = t("Zaloguj się, żeby zobaczyć grafik i swój czas pracy.") }: {
   onLogin: (user: string) => void;
   title?: string;
   lead?: string;
@@ -54,14 +55,15 @@ export function Login({ onLogin, title = "Grafik", lead = "Zaloguj się, żeby z
         <h1>{title}</h1>
         <p>{lead}</p>
         {error && <p className="error">{error}</p>}
-        <Field label="Login lub e-mail">{(id) => <input id={id} name="username" type="text" autoComplete="username" autoCapitalize="none" required />}</Field>
-        <Field label="Hasło">{(id) => <input id={id} name="password" type="password" autoComplete="current-password" required />}</Field>
+        <Field label={t("Login lub e-mail")}>{(id) => <input id={id} name="username" type="text" autoComplete="username" autoCapitalize="none" required />}</Field>
+        <Field label={t("Hasło")}>{(id) => <input id={id} name="password" type="password" autoComplete="current-password" required />}</Field>
         <button className="btn primary" disabled={busy}>
-          {busy ? "Logowanie…" : "Zaloguj się"}
+          {busy ? t("Logowanie…") : t("Zaloguj się")}
         </button>
         <p className="hint">
-          Nie masz konta? Login i hasło nadaje dyrektor firmy. Zakładasz Grafik dla swojej firmy? <a href="/rejestracja">Załóż konto</a> — za darmo.
+          {t("Nie masz konta? Login i hasło nadaje dyrektor firmy. Zakładasz Grafik dla swojej firmy?")} <a href="/rejestracja">{t("Załóż konto")}</a> — {t("za darmo.")}
         </p>
+        <LangSwitch />
       </form>
     </main>
   );
@@ -92,28 +94,28 @@ export function NewFirm() {
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
       {error && <p className="error">{error}</p>}
-      <Field label="Nazwa firmy">{(id) => <input id={id} name="firm" type="text" required maxLength={200} />}</Field>
-      <Field label="Twoje imię i nazwisko" hint="Tak zobaczą Cię pracownicy w grafiku.">
+      <Field label={t("Nazwa firmy")}>{(id) => <input id={id} name="firm" type="text" required maxLength={200} />}</Field>
+      <Field label={t("Twoje imię i nazwisko")} hint={t("Tak zobaczą Cię pracownicy w grafiku.")}>
         {(id) => <input id={id} name="name" type="text" required maxLength={120} autoComplete="name" />}
       </Field>
       <label className="check">
         <input name="accept" type="checkbox" required />
         <span>
-          Akceptuję <a href="/regulamin" target="_blank">regulamin</a> i zapoznałem/am się z{" "}
-          <a href={PRIVACY} target="_blank" rel="noopener">polityką prywatności</a>.
+          {t("Akceptuję")} <a href="/regulamin" target="_blank">{t("regulamin")}</a> {t("i zapoznałem/am się z")}{" "}
+          <a href={PRIVACY} target="_blank" rel="noopener">{t("polityką prywatności")}</a>.
         </span>
       </label>
-      <button className="btn primary" disabled={busy}>{busy ? "Zakładam…" : "Załóż firmę"}</button>
+      <button className="btn primary" disabled={busy}>{busy ? t("Zakładam…") : t("Załóż firmę")}</button>
     </form>
   );
 }
 
 const PAGES = [
-  { path: "/panel", label: "Dziś", min: "pracownik" },
-  { path: "/panel/grafik", label: "Grafik", min: "pracownik" },
-  { path: "/panel/wnioski", label: "Wnioski", min: "pracownik" },
-  { path: "/panel/czas", label: "Czas pracy", min: "pracownik" },
-  { path: "/panel/zespol", label: "Zespół i NFC", min: "dyrektor" },
+  { path: "/panel", label: t("Dziś"), min: "pracownik" },
+  { path: "/panel/grafik", label: t("Grafik"), min: "pracownik" },
+  { path: "/panel/wnioski", label: t("Wnioski"), min: "pracownik" },
+  { path: "/panel/czas", label: t("Czas pracy"), min: "pracownik" },
+  { path: "/panel/zespol", label: t("Zespół i NFC"), min: "dyrektor" },
 ] as const;
 const RANK = { pracownik: 0, kierownik: 1, dyrektor: 2, admin: 3 };
 
@@ -135,12 +137,15 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
   if (!firm)
     return (
       <main className="page">
-        <p className="empty">To konto nie należy jeszcze do żadnej firmy. Pracujesz w firmie, która używa Grafiku? Poproś dyrektora o dodanie. Prowadzisz firmę? Załóż ją tutaj.</p>
+        <p className="empty">{t("To konto nie należy jeszcze do żadnej firmy. Pracujesz w firmie, która używa Grafiku? Poproś dyrektora o dodanie. Prowadzisz firmę? Załóż ją tutaj.")}</p>
         <section className="card settings-card">
-          <h2>Nowa firma</h2>
+          <h2>{t("Nowa firma")}</h2>
           <NewFirm />
         </section>
-        <button className="btn" onClick={() => logOut().then(onLogout)}>Wyloguj</button>
+        <div className="inline-form">
+          <button className="btn" onClick={() => logOut().then(onLogout)}>{t("Wyloguj")}</button>
+          <LangSwitch />
+        </div>
       </main>
     );
 
@@ -161,7 +166,7 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
       <header className="topbar">
         <span className="firm">
           {list.length > 1 ? (
-            <select value={firm.id} onChange={(e) => choose(e.target.value)} aria-label="Firma">
+            <select value={firm.id} onChange={(e) => choose(e.target.value)} aria-label={t("Firma")}>
               {list.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -179,9 +184,10 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
             </a>
           ))}
         </nav>
+        <LangSwitch />
         <span className="who">{user}</span>
         <button className="link" onClick={() => logOut().then(onLogout)}>
-          Wyloguj
+          {t("Wyloguj")}
         </button>
       </header>
       {current.path === "/panel/grafik" ? (

@@ -37,3 +37,16 @@
 - Backup bazy powstawał z prawami 644 (dane osobowe czytelne dla każdego konta) — `umask 077` w `backup.sh`; ten sam problem jest w HotelAgenda.
 ### Następne kroki
 - Rezerwacja DHCP dla LXC 108 na routerze; polityka prywatności `#grafik`, przegląd regulaminu, test prawdziwego NFC — OpenProject.
+- Po wdrożeniu: „Załóż firmę” dla zalogowanego konta (pusty panel nie jest już ślepą uliczką) — wdrożone, commit a124892.
+- Wersja angielska całości (PL/EN): panel, strona, rejestracja, regulamin (tłumaczenie, wiąże PL), kiosk, naklejka,
+  komunikaty API, etykiety, CSV. Wzorzec z Narrative Framework (polski tekst = klucz). Bramki: `i18n.check` (front),
+  `EnglishTests` (backend, skan AST), E2E krok EN (szuka polskich liter na każdej stronie). Lokalnie zielone; **na produkcję
+  nie poszło** — wdrożenie zablokowane przez tryb uprawnień, czeka na zgodę usera.
+### Zadziałało (EN)
+- Natywny `LocaleMiddleware` + ciasteczko `django_language` z przełącznika: link do CSV, regulamin i błędy walidatorów
+  Django same wychodzą po angielsku, bez nagłówków w każdym zapytaniu.
+- Skan AST w teście zamiast ręcznej listy — znalazł komunikaty z `"…" if … else "…"`, które pierwsza wersja pomijała.
+### Nie zadziałało (EN)
+- Pierwszy krok EN w E2E skanował strony panelu, zanim doszły dane (trasa po stronie klienta, `networkidle` mijał od razu) —
+  test był zielony na pustych stronach. Teraz czeka na odpowiedź API i treść.
+- `copy_week` zwracał pominięte zmiany przez `str(error)` — zawsze po polsku; teraz przez `error_body`.
