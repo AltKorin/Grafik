@@ -20,7 +20,7 @@ czasu pracy przez NFC. Stan: MVP v1, 2026-10-26.
 | Rola | Może |
 | --- | --- |
 | dyrektor | wszystko: zespół, działy, punkty NFC, firma, grafik i korekty wszystkich |
-| kierownik | grafik, wnioski i korekty odbić osób ze **swojego** działu |
+| kierownik | grafik, wnioski i korekty odbić osób ze **swojego** działu; zakładka „Zespół”: dodaje pracowników (tylko rola pracownik, tylko swój dział), wysyła im zaproszenia, nadaje loginy i karty (od 28.10) |
 | pracownik | widzi grafik swojego działu, zgłasza swoją niedyspozycyjność, składa wnioski, widzi swój czas |
 | admin (superuser) | jak dyrektor w każdej firmie — tylko serwis |
 

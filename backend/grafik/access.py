@@ -2,7 +2,7 @@
 right is a 403 with a sentence saying who can do it.
 
 Roles (PLAN.md §2): dyrektor — everything; kierownik — schedule, requests and time records of the
-people in his own department; pracownik — sees his department's schedule, manages his own
+people in his own department, and the accounts of its employees (team.manageable); pracownik — sees his department's schedule, manages his own
 unavailability and requests. Superuser (agencja) acts as „admin” = dyrektor of every firm.
 """
 

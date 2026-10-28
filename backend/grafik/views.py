@@ -10,13 +10,18 @@ from rest_framework.throttling import AnonRateThrottle
 
 from core import accounts
 from core.domain_errors import DomainError
-from core.i18n import error_body
+from core.i18n import error_body, tr
+from core.views import PostThrottle, csrf_denied
 
 from . import clock, schedule, team
 
 
 class KioskThrottle(AnonRateThrottle):
     scope = "kiosk"
+
+
+class InviteThrottle(PostThrottle):
+    scope = "invite"
 
 
 def answer(fn):
@@ -76,6 +81,10 @@ employee = methods(
 employee_account = methods(
     POST=lambda r, workplace_id, employee_id: team.give_account(u(r), workplace_id, employee_id, r.data),
     DELETE=lambda r, workplace_id, employee_id: team.remove_account(u(r), workplace_id, employee_id),
+)
+employee_invite = methods(
+    POST=lambda r, workplace_id, employee_id: team.invite(u(r), workplace_id, employee_id),
+    DELETE=lambda r, workplace_id, employee_id: team.cancel_invite(u(r), workplace_id, employee_id),
 )
 employee_card = methods(
     POST=lambda r, workplace_id, employee_id: team.assign_card(u(r), workplace_id, employee_id, r.data),
@@ -165,3 +174,18 @@ def kiosk(request, secret):
     if request.method == "POST":
         return clock.kiosk_punch(secret, request.data)
     return clock.kiosk_info(secret)
+
+
+# --- invitation link: the employee sets up his own login (no session yet) -----------------------------------
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+@throttle_classes([InviteThrottle])
+@answer
+def invitation(request, secret):
+    if request.method == "POST":
+        if csrf_denied(request):
+            return Response({"error": tr("Błąd weryfikacji CSRF")}, status=403)
+        return team.accept_invitation(request, secret, request.data)
+    return team.invitation_info(secret)

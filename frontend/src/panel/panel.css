@@ -92,7 +92,7 @@
 
 /* --- login --- */
 .login { min-height: 100%; display: grid; place-items: center; padding: 24px; }
-.login form { width: min(400px, 100%); background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 36px 32px; display: grid; gap: 16px; }
+.login form, .login-card { width: min(400px, 100%); background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 36px 32px; display: grid; gap: 16px; }
 .login h1 { margin: 0 0 4px; font: 650 30px/1.1 var(--serif); }
 .login p { margin: 0 0 8px; color: var(--ink-soft); }
 

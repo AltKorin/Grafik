@@ -1,21 +1,29 @@
 // Zespół i NFC (director): departments, people (login, card), clock points (sticker + kiosk), the firm.
+// A department manager sees only "Zespół": the employees of his department — add, edit, invite, card.
 // CLAUDE.md: everything here has list / add / edit / delete in this panel.
 import QRCode from "qrcode";
 import { useEffect, useState, type FormEvent } from "react";
 import { hasWebNfc, writeUrl } from "../nfc.ts";
 import { api, useApi, type ClockPoint, type Department, type Employee, type UnknownCard, type Workplace } from "./api.ts";
 import { NewFirm } from "./Panel.tsx";
-import { Dialog, Field, useToast } from "./ui.tsx";
+import { Dialog, Field, Segmented, useToast } from "./ui.tsx";
 import { locale, t } from "../i18n.ts";
 
 // Słownik Kolorów, połączenia 201, 204, 208, 209 (s. 128–132) — proposed department colours.
 const SWATCHES = ["#2f8a68", "#1e5f9b", "#c95a1e", "#a3195b", "#6b6a1f", "#2a8a91", "#8094d6", "#e0762c", "#9dbbd6", "#5b7a8c"];
 const ROLES: [Employee["role"], string][] = [["pracownik", t("Pracownik")], ["kierownik", t("Kierownik działu")], ["dyrektor", t("Dyrektor")]];
+type Access = "invite" | "login" | "none";
+const ACCESS: [Access, string][] = [["invite", t("Wyślę link z zaproszeniem")], ["login", t("Nadam login i hasło")], ["none", t("Tylko karta w kiosku")]];
+type Shown = { name: string; password?: string; login?: string; url?: string; until?: string };
+
+const isDirector = (firm: Workplace) => firm.role === "dyrektor" || firm.role === "admin";
+const day = (iso: string) => new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "long" });
 
 export default function Team({ firm, onFirmChange }: { firm: Workplace; onFirmChange: () => void }) {
+  const director = isDirector(firm);
   const departments = useApi<Department[]>(`/w/${firm.id}/departments/`);
   const people = useApi<Employee[]>(`/w/${firm.id}/employees/`);
-  const points = useApi<ClockPoint[]>(`/w/${firm.id}/points/`);
+  const points = useApi<ClockPoint[]>(director ? `/w/${firm.id}/points/` : null);
   const reloadAll = () => {
     departments.reload();
     people.reload();
@@ -24,14 +32,19 @@ export default function Team({ firm, onFirmChange }: { firm: Workplace; onFirmCh
     <main className="page">
       <div className="page-head">
         <div>
-          <h1>{t("Zespół i NFC")}</h1>
-          <p>{t("Działy, pracownicy z loginami i kartami, punkty odbić przy wejściu, ustawienia firmy.")}</p>
+          <h1>{director ? t("Zespół i NFC") : t("Zespół")}</h1>
+          <p>{director ? t("Działy, pracownicy z loginami i kartami, punkty odbić przy wejściu, ustawienia firmy.")
+            : t("Pracownicy twojego działu: dodajesz ich, wysyłasz zaproszenia do logowania i przypisujesz karty.")}</p>
         </div>
       </div>
       <People firm={firm} people={people.data ?? []} departments={departments.data ?? []} onChange={reloadAll} />
-      <Departments firm={firm} departments={departments.data ?? []} onChange={reloadAll} />
-      <Points firm={firm} points={points.data ?? []} onChange={points.reload} />
-      <Firm firm={firm} onChange={onFirmChange} />
+      {director && (
+        <>
+          <Departments firm={firm} departments={departments.data ?? []} onChange={reloadAll} />
+          <Points firm={firm} points={points.data ?? []} onChange={points.reload} />
+          <Firm firm={firm} onChange={onFirmChange} />
+        </>
+      )}
     </main>
   );
 }
@@ -40,23 +53,26 @@ export default function Team({ firm, onFirmChange }: { firm: Workplace; onFirmCh
 
 function People({ firm, people, departments, onChange }: { firm: Workplace; people: Employee[]; departments: Department[]; onChange: () => void }) {
   const [editing, setEditing] = useState<Employee | "new" | null>(null);
-  const [secret, setSecret] = useState<{ name: string; login: string; password: string } | null>(null);
+  const [shown, setShown] = useState<Shown | null>(null);
   const names = Object.fromEntries(departments.map((d) => [d.id, d.name]));
   const current = editing && editing !== "new" ? people.find((p) => p.id === editing.id) ?? null : null;
+  // the backend has the same rule (team.manageable); here it only hides buttons that would answer 403
+  const editable = (p: Employee) => isDirector(firm) || (p.role === "pracownik" && p.department === firm.department);
   return (
     <section className="card settings-card">
       <h2>{t("Pracownicy")}</h2>
-      {secret && (
+      {shown?.password && (
         <div className="notice secret">
           <p>
-            {t("Dane logowania dla")} <strong>{secret.name}</strong> — {t("przekaż je teraz, później nie będzie ich widać:")}
+            {t("Dane logowania dla")} <strong>{shown.name}</strong> — {t("przekaż je teraz, później nie będzie ich widać:")}
           </p>
           <p className="num">
-            {t("login:")} <strong>{secret.login}</strong> · {t("hasło:")} <strong>{secret.password}</strong>
+            {t("login:")} <strong>{shown.login}</strong> · {t("hasło:")} <strong>{shown.password}</strong>
           </p>
-          <button className="btn" onClick={() => setSecret(null)}>{t("Przekazane, ukryj")}</button>
+          <button className="btn" onClick={() => setShown(null)}>{t("Przekazane, ukryj")}</button>
         </div>
       )}
+      {shown?.url && <InviteLink shown={shown} onDone={() => setShown(null)} />}
       <ul className="settings-list">
         {people.map((p) => (
           <li key={p.id} style={p.active ? undefined : { opacity: 0.6 }}>
@@ -64,12 +80,12 @@ function People({ firm, people, departments, onChange }: { firm: Workplace; peop
             <span className="muted">
               {ROLES.find(([r]) => r === p.role)?.[1]}
               {p.department && names[p.department] && ` · ${names[p.department]}`}
-              {p.login ? ` · ${t("login")} ${p.login}` : ` · ${t("bez logowania")}`}
+              {p.login ? ` · ${t("login")} ${p.login}` : p.invited_until ? ` · ${t("zaproszenie do {day}", { day: day(p.invited_until) })}` : ` · ${t("bez logowania")}`}
               {p.card ? ` · ${t("karta")} ${p.card}` : ""}
               {!p.active && ` · ${t("zarchiwizowany")}`}
             </span>
             <span className="settings-actions">
-              <button className="btn quiet" onClick={() => setEditing(p)}>{t("Zmień")}</button>
+              {editable(p) && <button className="btn quiet" onClick={() => setEditing(p)}>{t("Zmień")}</button>}
             </span>
           </li>
         ))}
@@ -83,11 +99,36 @@ function People({ firm, people, departments, onChange }: { firm: Workplace; peop
           onClose={() => setEditing(null)}
           onSaved={(result) => {
             onChange();
-            if (result?.password && result.login) setSecret({ name: result.name, login: result.login, password: result.password });
+            if (result?.password && result.login) setShown({ name: result.name, login: result.login, password: result.password });
+            if (result?.invite_path && result.invited_until)
+              setShown({ name: result.name, url: `${window.location.origin}${result.invite_path}`, until: result.invited_until });
           }}
         />
       )}
     </section>
+  );
+}
+
+/** The invitation is shown once (only its hash is stored): send it now, or make a new one later. */
+function InviteLink({ shown, onDone }: { shown: Shown; onDone: () => void }) {
+  const toast = useToast();
+  const url = shown.url!;
+  const text = t("Załóż konto w Grafiku: {url}", { url });
+  return (
+    <div className="notice secret">
+      <p>
+        {t("Zaproszenie:")} <strong>{shown.name}</strong>. {t("Wyślij link SMS-em, WhatsAppem albo e-mailem albo pokaż kod QR do zeskanowania. Działa raz, do {day}. Pokazujemy go tylko teraz.", { day: day(shown.until!) })}
+      </p>
+      <div className="link-card" style={{ padding: 0, border: 0, background: "none" }}>
+        <Qr url={url} />
+        <div className="url"><code>{url}</code></div>
+      </div>
+      <div className="inline-form">
+        {"share" in navigator && <button className="btn primary" onClick={() => navigator.share({ title: "Grafik", text }).catch(() => undefined)}>{t("Udostępnij")}</button>}
+        <button className="btn" onClick={() => navigator.clipboard?.writeText(url).then(() => toast(t("Link skopiowany.")))}>{t("Kopiuj link")}</button>
+        <button className="btn quiet" onClick={onDone}>{t("Wysłane, ukryj")}</button>
+      </div>
+    </div>
   );
 }
 
@@ -99,8 +140,10 @@ function PersonDialog({ firm, person, departments, onClose, onSaved }: {
   onSaved: (result?: Employee) => void;
 }) {
   const toast = useToast();
+  const director = isDirector(firm);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [access, setAccess] = useState<Access>("invite");
   const unknown = useApi<UnknownCard[]>(person ? `/w/${firm.id}/unknown-cards/` : null);
   const base = `/w/${firm.id}/employees/${person?.id}/`;
   const act = async (fn: () => Promise<Employee | { archived?: boolean }>, message: string, close = false) => {
@@ -114,16 +157,22 @@ function PersonDialog({ firm, person, departments, onClose, onSaved }: {
       setError((err as Error).message);
     }
   };
+  const sendInvite = (url: string) => act(() => api.post<Employee>(`${url}invite/`), t("Zaproszenie gotowe — wyślij link."), true);
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const body = { name: f.get("name"), department: f.get("department") || null, role: f.get("role"), login: f.get("login") || undefined, active: person ? f.get("active") === "on" : undefined };
-    act(
-      () => (person ? api.patch<Employee>(base, body) : api.post<Employee>(`/w/${firm.id}/employees/`, body)),
-      person ? t("Zapisano.") : t("Dodano pracownika."),
-      true,
-    );
+    const body = {
+      name: f.get("name"),
+      ...(director ? { department: f.get("department") || null, role: f.get("role") } : {}), // a manager: own department, employee
+      login: access === "login" ? f.get("login") : undefined,
+      active: person ? f.get("active") === "on" : undefined,
+    };
+    if (person) return act(() => api.patch<Employee>(base, body), t("Zapisano."), true);
+    act(async () => {
+      const made = await api.post<Employee>(`/w/${firm.id}/employees/`, body);
+      return access === "invite" ? api.post<Employee>(`/w/${firm.id}/employees/${made.id}/invite/`) : made;
+    }, access === "invite" ? t("Dodano pracownika. Wyślij mu link z zaproszeniem.") : t("Dodano pracownika."), true);
   };
   const assign = (uid: string) => act(() => api.post<Employee>(`${base}card/`, { uid }), t("Karta przypisana — działa od razu w kiosku."));
 
@@ -132,27 +181,36 @@ function PersonDialog({ firm, person, departments, onClose, onSaved }: {
       <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
         {error && <p className="error">{error}</p>}
         <Field label={t("Imię i nazwisko")}>{(id) => <input id={id} name="name" type="text" required maxLength={120} defaultValue={person?.name ?? ""} />}</Field>
-        <div className="grid-2">
-          <Field label={t("Dział")}>
-            {(id) => (
-              <select id={id} name="department" defaultValue={person?.department ?? ""}>
-                <option value="">— {t("bez działu")} —</option>
-                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            )}
-          </Field>
-          <Field label={t("Rola")}>
-            {(id) => (
-              <select id={id} name="role" defaultValue={person?.role ?? "pracownik"}>
-                {ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            )}
-          </Field>
-        </div>
+        {director && (
+          <div className="grid-2">
+            <Field label={t("Dział")}>
+              {(id) => (
+                <select id={id} name="department" defaultValue={person?.department ?? ""}>
+                  <option value="">— {t("bez działu")} —</option>
+                  {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              )}
+            </Field>
+            <Field label={t("Rola")}>
+              {(id) => (
+                <select id={id} name="role" defaultValue={person?.role ?? "pracownik"}>
+                  {ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              )}
+            </Field>
+          </div>
+        )}
         {!person && (
-          <Field label={t("Login (opcjonalnie)")} hint={t("Potrzebny do odbić telefonem i do panelu. Osoba z samą kartą w kiosku go nie potrzebuje. Hasło wygenerujemy.")}>
-            {(id) => <input id={id} name="login" type="text" maxLength={40} autoCapitalize="none" placeholder={t("np. anna.nowak")} />}
-          </Field>
+          <>
+            <Segmented label={t("Jak będzie się logować?")} value={access} options={ACCESS} onChange={setAccess} />
+            {access === "invite" && <p className="hint">{t("Dostaniesz link do wysłania. Pracownik sam ustawi login i hasło — Ty ich nie znasz.")}</p>}
+            {access === "login" && (
+              <Field label={t("Login")} hint={t("Hasło wygenerujemy i pokażemy raz.")}>
+                {(id) => <input id={id} name="login" type="text" required maxLength={40} autoCapitalize="none" placeholder={t("np. anna.nowak")} />}
+              </Field>
+            )}
+            {access === "none" && <p className="hint">{t("Bez telefonu i panelu — odbija się kartą w kiosku. Zaproszenie możesz wysłać później.")}</p>}
+          </>
         )}
         {person && (
           <label className="check">
@@ -174,10 +232,21 @@ function PersonDialog({ firm, person, departments, onClose, onSaved }: {
               {!person.me && <button className="btn quiet" onClick={() => act(() => api.delete<Employee>(`${base}account/`, {}), t("Logowanie odebrane."))}>{t("Odbierz logowanie")}</button>}
             </div>
           ) : (
-            <form className="inline-form" onSubmit={(e) => { e.preventDefault(); act(() => api.post<Employee>(`${base}account/`, { login: new FormData(e.currentTarget).get("login") }), t("Login utworzony.")); }}>
-              <Field label={t("Nowy login")}>{(id) => <input id={id} name="login" type="text" required maxLength={40} autoCapitalize="none" />}</Field>
-              <button className="btn">{t("Utwórz login")}</button>
-            </form>
+            <>
+              {person.invited_until ? (
+                <div className="inline-form">
+                  <span>{t("Zaproszenie czeka — ważne do {day}.", { day: day(person.invited_until) })}</span>
+                  <button className="btn" onClick={() => sendInvite(base)}>{t("Nowy link")}</button>
+                  <button className="btn quiet" onClick={() => act(() => api.delete<Employee>(`${base}invite/`, {}), t("Zaproszenie anulowane — link już nie działa."))}>{t("Anuluj zaproszenie")}</button>
+                </div>
+              ) : (
+                person.active && <button className="btn primary" style={{ justifySelf: "start" }} onClick={() => sendInvite(base)}>{t("Wyślij zaproszenie")}</button>
+              )}
+              <form className="inline-form" onSubmit={(e) => { e.preventDefault(); act(() => api.post<Employee>(`${base}account/`, { login: new FormData(e.currentTarget).get("login") }), t("Login utworzony.")); }}>
+                <Field label={t("albo nadaj login sam")}>{(id) => <input id={id} name="login" type="text" required maxLength={40} autoCapitalize="none" />}</Field>
+                <button className="btn">{t("Utwórz login")}</button>
+              </form>
+            </>
           )}
           <h3 className="section-title">{t("Karta / brelok NFC")}</h3>
           {person.card ? (

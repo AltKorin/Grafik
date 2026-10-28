@@ -4,8 +4,9 @@
 import os
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
@@ -32,7 +33,11 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, reset=False, **options):
-        password = os.environ.get("DEMO_PASSWORD") or "demo-haslo-do-testow"
+        password = os.environ.get("DEMO_PASSWORD")
+        if not password and not settings.DEBUG:
+            # the fallback is in a public repository: on a real server it would be an open door
+            raise CommandError("Ustaw DEMO_PASSWORD w .env (długie, losowe) — bez niego demo działa tylko lokalnie (DEBUG=1)")
+        password = password or "demo-haslo-do-testow"
         existing = Workplace.objects.filter(name=NAME).first()
         if existing and not reset:
             self.stdout.write(f"Demo już jest ({existing.id}). Nowe linki: --reset")

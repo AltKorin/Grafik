@@ -34,6 +34,11 @@ stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias
 - Link naklejki jest publiczny z natury — przy wycieku „Nowy link” w panelu; kiosk ma osobny sekret (sha256 w bazie).
 - Czytniki USB różnie podają UID (hex/dziesiętnie) — karty przypisuj z listy „nieznane karty” z tego samego kiosku.
 - Strefa czasowa per firma (`Workplace.timezone`); `TIME_ZONE=UTC` w ustawieniach.
+- **`ssh host 'bash -s' <<EOF` + `deploy.sh`**: `docker compose exec -T` w środku czyta stdin, czyli resztę heredoca —
+  dalsze polecenia znikają bez błędu (28.10). `deploy.sh` uruchamiaj osobnym `ssh … 'cd /opt/grafik && deploy/deploy.sh'`.
+- **Zaproszenia**: `Employee.invite_hash` (sha256, jednorazowe, `INVITE_DAYS`), publiczne `/api/invite/<token>/` (CSRF + throttle
+  `invite` na POST). Kierownik zarządza tylko pracownikami (rola pracownik) swojego działu — reguła w `team.manageable`.
+  `seed_demo` na serwerze (`DEBUG=0`) wymaga `DEMO_PASSWORD` — zapasowe hasło jest w publicznym repo.
 - **PL/EN**: polski tekst = klucz. Front: `t("…")` + wpis w `frontend/src/en.ts` (`npm run check` pada bez wpisu, z martwym wpisem
   albo z innymi `{param}`). Backend: komunikat `DomainError("… {x} …", x=…)` / `tr("…")` + wpis w `grafik/data/en.json`
   (test `core.tests.EnglishTests` skanuje kod). Język = ciasteczko `django_language` (przełącznik) → `LocaleMiddleware`.

@@ -14,6 +14,7 @@ Język UI i rozmów z klientem. Kod po angielsku (w nawiasie). UI po polsku i po
 | **Wniosek** (`ChangeRequest`) | Request | Prośba o zamianę, odwołanie, inne godziny lub dodatkową zmianę; przyjmuje kierownik. |
 | **Punkt odbić** (`ClockPoint`) | Clock point | Wejście do pracy: naklejka NFC i/lub kiosk. |
 | **Naklejka NFC** | NFC sticker | Tag z linkiem punktu; pracownik przykłada swój zalogowany telefon. |
+| **Zaproszenie** (`invite_hash`) | Invitation | Jednorazowy link, który kierownik wysyła pracownikowi; pracownik sam ustawia login i hasło. |
 | **Kiosk** | Kiosk | Tablet przy wejściu: karta/brelok przy czytniku. Link z sekretem, pokazywany raz. |
 | **Odbicie** (`Punch`) | Punch (clock-in / clock-out) | Zdarzenie wejście / wyjście. Niezmienialne. |
 | **Korekta** | Correction | Odbicie dopisane przez kierownika (z powodem) albo anulowanie pomyłki (z powodem). |

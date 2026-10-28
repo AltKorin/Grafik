@@ -8,7 +8,11 @@ import hashlib
 import re
 import secrets
 
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth import login as sign_in
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Q
@@ -18,12 +22,13 @@ from core.domain_errors import DomainError
 from core.models import LoginEvent, TermsAcceptance
 
 from . import domain
-from .access import is_director, workplace_access
+from .access import is_director, manages, sees, workplace_access
 from .models import ChangeRequest, ClockPoint, Department, Employee, Punch, Shift, Unavailability, Workplace
 
 LOGIN = re.compile(r"[A-Za-z0-9_.-]{3,40}")
 COLOR = re.compile(r"#[0-9a-fA-F]{6}")
 CARD = re.compile(r"[0-9A-Z]{4,64}")
+PLAIN = str.maketrans("ąćęłńóśźż", "acelnoszz")  # login suggestions from Polish names
 UNKNOWN_CARDS = 5  # last unknown taps per firm, offered in the panel for assigning
 
 
@@ -142,12 +147,11 @@ def employee_json(e, w):
         "login": account.get_username() if account else None,
         "last_login": account.last_login.isoformat() if account and account.last_login else None,
         "me": bool(getattr(w, "me", None)) and e.pk == w.me.pk,
+        "invited_until": e.invite_expires.isoformat() if e.invite_hash and e.invite_expires and e.invite_expires > timezone.now() else None,
     }
 
 
 def list_employees(user, workplace_id):
-    from .access import sees
-
     w = workplace_access(user, workplace_id)
     people = w.employees.select_related("user").order_by("-active", "name")
     return [employee_json(e, w) for e in people if is_director(w) or (e.active and sees(w, e))]
@@ -160,11 +164,28 @@ def staff_member(w, employee_id):
     return e
 
 
+def manageable(w, employee_id):
+    """Director: anyone in the firm. Department manager: the employees (role pracownik) of his own department."""
+    e = staff_member(w, employee_id)
+    if is_director(w):
+        return e
+    if not sees(w, e):
+        raise DomainError("Pracownik: nie znaleziono", 404)
+    if not (manages(w, e) and e.role == "pracownik"):
+        raise DomainError("To może zrobić kierownik działu tej osoby albo dyrektor", 403)
+    return e
+
+
 def employee_values(data, w):
     domain.body_object(data)
     role = data.get("role", "pracownik")
     if role not in dict(Employee.ROLES):
         raise DomainError("Rola: dyrektor, kierownik albo pracownik")
+    if not is_director(w):  # a department manager adds and edits only employees of his own department
+        own = str(w.me.department_id)
+        if role != "pracownik" or (data.get("department") or own) != own:
+            raise DomainError("Kierownik dodaje tylko pracowników swojego działu", 403)
+        data = {**data, "department": own}
     department = department_in(w, data["department"]) if data.get("department") else None
     if role == "kierownik" and not department:
         raise DomainError("Kierownik musi mieć dział — to jego zespół")
@@ -179,7 +200,7 @@ def keep_a_director(w, e):
 
 @transaction.atomic
 def create_employee(user, workplace_id, data):
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
+    w = workplace_access(user, workplace_id, minimum="kierownik")
     e = Employee.objects.create(workplace=w, **employee_values(data, w))
     result = employee_json(e, w)
     if data.get("login"):
@@ -189,8 +210,8 @@ def create_employee(user, workplace_id, data):
 
 @transaction.atomic
 def update_employee(user, workplace_id, employee_id, data):
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
-    e = staff_member(w, employee_id)
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
     values = employee_values(data, w)
     if values["role"] != e.role:
         keep_a_director(w, e)
@@ -211,8 +232,8 @@ def update_employee(user, workplace_id, employee_id, data):
 @transaction.atomic
 def delete_employee(user, workplace_id, employee_id):
     """Someone with time records is archived (the firm must keep its time records); others go away."""
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
-    e = staff_member(w, employee_id)
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
     if w.me and e.pk == w.me.pk:
         raise DomainError("Nie możesz usunąć samego siebie", 409)
     keep_a_director(w, e)
@@ -246,34 +267,36 @@ def retire_account(e):
 @transaction.atomic
 def give_account(user, workplace_id, employee_id, data):
     """New login with a generated password, or a new password for the existing one. Shown once."""
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
-    e = staff_member(w, employee_id)
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
     password = secrets.token_urlsafe(9)
-    User = get_user_model()
-    if e.user:
-        account = e.user
-    else:
-        login = domain.body_object(data).get("login")
-        if not isinstance(login, str) or not LOGIN.fullmatch(login.strip()):
-            raise DomainError("Login: 3–40 znaków — litery bez polskich znaków, cyfry, kropka, myślnik, podkreślenie")
-        login = login.strip().lower()
-        account = User.objects.filter(username__iexact=login).first()
-        # A person coming back gets their old account (history keeps one author); never take over a used one.
-        if account and (account.is_active or account.is_superuser or account.employments.exists()):
-            raise DomainError("Ten login jest już zajęty — wybierz inny", 409)
-        account = account or User.objects.create_user(login)
-        e.user = account
-        e.save(update_fields=["user"])
+    account = e.user or attach_login(e, domain.body_object(data).get("login"))
     account.set_password(password)
     account.is_active = True
     account.save()
     return {**employee_json(e, w), "password": password}
 
 
+def attach_login(e, login):
+    """A free login becomes this person's account; any pending invitation is spent."""
+    if not isinstance(login, str) or not LOGIN.fullmatch(login.strip()):
+        raise DomainError("Login: 3–40 znaków — litery bez polskich znaków, cyfry, kropka, myślnik, podkreślenie")
+    login = login.strip().lower()
+    User = get_user_model()
+    account = User.objects.filter(username__iexact=login).first()
+    # A person coming back gets their old account (history keeps one author); never take over a used one.
+    if account and (account.is_active or account.is_superuser or account.employments.exists()):
+        raise DomainError("Ten login jest już zajęty — wybierz inny", 409)
+    account = account or User.objects.create_user(login)
+    e.user, e.invite_hash, e.invite_expires = account, "", None
+    e.save(update_fields=["user", "invite_hash", "invite_expires"])
+    return account
+
+
 @transaction.atomic
 def remove_account(user, workplace_id, employee_id):
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
-    e = staff_member(w, employee_id)
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
     if w.me and e.pk == w.me.pk:
         raise DomainError("Nie możesz odebrać logowania samemu sobie", 409)
     account, e.user = e.user, None
@@ -281,6 +304,68 @@ def remove_account(user, workplace_id, employee_id):
     if account:
         deactivate_if_unused(account)
     return employee_json(e, w)
+
+
+# --- invitations: the manager sends a link, the employee picks a login and password himself ---
+
+@transaction.atomic
+def invite(user, workplace_id, employee_id):
+    """A new one-time link; an older one stops working. The link is shown once — only its hash is kept."""
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
+    if e.user:
+        raise DomainError("Ta osoba ma już login — możesz nadać jej nowe hasło", 409)
+    if not e.active:
+        raise DomainError("Ta osoba jest zarchiwizowana", 409)
+    secret = token()
+    e.invite_hash, e.invite_expires = digest(secret), timezone.now() + timedelta(days=settings.INVITE_DAYS)
+    e.save(update_fields=["invite_hash", "invite_expires"])
+    return {**employee_json(e, w), "invite_path": f"/zaproszenie/{secret}"}
+
+
+@transaction.atomic
+def cancel_invite(user, workplace_id, employee_id):
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
+    e.invite_hash, e.invite_expires = "", None
+    e.save(update_fields=["invite_hash", "invite_expires"])
+    return employee_json(e, w)
+
+
+def invited(secret, lock=False):
+    qs = Employee.objects.select_for_update() if lock else Employee.objects
+    e = qs.select_related("workplace").filter(
+        invite_hash=digest(secret) if isinstance(secret, str) and secret else "-", active=True, user__isnull=True,
+        invite_expires__gt=timezone.now()).first()
+    if not e:
+        raise DomainError("Zaproszenie wygasło albo zostało już użyte — poproś kierownika o nowy link", 404)
+    return e
+
+
+def invitation_info(secret):
+    e = invited(secret)
+    suggestion = re.sub(r"[^a-z0-9]+", ".", e.name.lower().translate(PLAIN)).strip(".")[:40]
+    return {"workplace": e.workplace.name, "name": e.name, "login": suggestion}
+
+
+@transaction.atomic
+def accept_invitation(request, secret, data):
+    """The employee's own login and password; then he is signed in. The link works once."""
+    from core.accounts import password_errors
+
+    e = invited(secret, lock=True)
+    domain.body_object(data)
+    password = data.get("password")
+    if not isinstance(password, str) or len(password) > 4096:
+        raise DomainError("Nieprawidłowe pola formularza")
+    login = data.get("login")
+    password_errors(password, get_user_model()(username=login if isinstance(login, str) else ""))
+    account = attach_login(e, login)
+    account.set_password(password)
+    account.is_active = True
+    account.save()
+    sign_in(request, account, backend="django.contrib.auth.backends.ModelBackend")
+    return {"workplace": str(e.workplace_id), "login": account.get_username()}
 
 
 # --- NFC cards -------------------------------------------------------------------------------
@@ -292,15 +377,15 @@ def remember_unknown_card(w, uid, point):
 
 
 def unknown_cards(user, workplace_id):
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
+    w = workplace_access(user, workplace_id, minimum="kierownik")
     known = set(w.employees.exclude(card_uid="").values_list("card_uid", flat=True))
     return [t for t in cache.get(f"unknown-cards:{w.id}", []) if t["uid"] not in known]
 
 
 @transaction.atomic
 def assign_card(user, workplace_id, employee_id, data):
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
-    e = staff_member(w, employee_id)
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
     uid = normalize_card(domain.body_object(data).get("uid"))
     holder = w.employees.filter(card_uid=uid).exclude(pk=e.pk).first()
     if holder:
@@ -312,8 +397,8 @@ def assign_card(user, workplace_id, employee_id, data):
 
 @transaction.atomic
 def remove_card(user, workplace_id, employee_id):
-    w = workplace_access(user, workplace_id, minimum="dyrektor")
-    e = staff_member(w, employee_id)
+    w = workplace_access(user, workplace_id, minimum="kierownik")
+    e = manageable(w, employee_id)
     e.card_uid = ""
     e.save(update_fields=["card_uid"])
     return employee_json(e, w)

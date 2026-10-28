@@ -50,6 +50,9 @@ class Employee(models.Model):
     # Serial number (UID) of the NFC card or key fob, as the reader types it.
     card_uid = models.CharField(max_length=64, blank=True)
     active = models.BooleanField(default=True)
+    # Invitation link (/zaproszenie/<token>): only the sha256 of the token is kept; one use, then cleared.
+    invite_hash = models.CharField(max_length=64, blank=True, db_index=True)
+    invite_expires = models.DateTimeField(null=True, blank=True)
     history = HistoricalRecords()
 
     class Meta:

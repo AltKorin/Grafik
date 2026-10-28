@@ -115,7 +115,7 @@ const PAGES = [
   { path: "/panel/grafik", label: t("Grafik"), min: "pracownik" },
   { path: "/panel/wnioski", label: t("Wnioski"), min: "pracownik" },
   { path: "/panel/czas", label: t("Czas pracy"), min: "pracownik" },
-  { path: "/panel/zespol", label: t("Zespół i NFC"), min: "dyrektor" },
+  { path: "/panel/zespol", label: t("Zespół i NFC"), min: "kierownik" }, // a manager sees only his people there
 ] as const;
 const RANK = { pracownik: 0, kierownik: 1, dyrektor: 2, admin: 3 };
 
@@ -180,7 +180,7 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
         <nav>
           {pages.map((p) => (
             <a key={p.path} {...linkTo(p.path)} aria-current={p === current ? "page" : undefined}>
-              {p.label}
+              {p.path === "/panel/zespol" && firm.role === "kierownik" ? t("Zespół") : p.label}
             </a>
           ))}
         </nav>

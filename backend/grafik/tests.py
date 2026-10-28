@@ -440,3 +440,89 @@ class SessionMathTests(SimpleTestCase):
         self.assertEqual(domain.next_kind(self.p(1, "in", -1), NOW, 16), "out")
         self.assertEqual(domain.next_kind(self.p(1, "in", -17), NOW, 16), "in")
         self.assertEqual(domain.next_kind(self.p(1, "out", -1), NOW, 16), "in")
+
+
+class ManagerTeamTests(Base):
+    """A department manager runs the accounts of his own department's employees — and nothing else."""
+
+    def test_manager_adds_employee_only_to_own_department_as_employee(self):
+        kk = self.api("kk")
+        made = kk.post(self.url("employees/"), {"name": "Nowy Kucharz"}, format="json")
+        self.assertEqual(made.status_code, 200, made.content)
+        self.assertEqual((made.json()["role"], made.json()["department"]), ("pracownik", str(self.w.kitchen.id)))
+        for bad in ({"name": "X", "role": "dyrektor"}, {"name": "X", "role": "kierownik", "department": str(self.w.kitchen.id)},
+                    {"name": "X", "department": str(self.w.reception.id)}):
+            with self.subTest(bad=bad):
+                self.assertEqual(kk.post(self.url("employees/"), bad, format="json").status_code, 403)
+        self.assertEqual(self.api("ku").post(self.url("employees/"), {"name": "X"}, format="json").status_code, 403)
+
+    def test_manager_touches_only_his_employees(self):
+        kk = self.api("kk")
+        ku, re_, dx = (self.p[k].id for k in ("ku", "re", "dx"))
+        self.assertEqual(kk.post(self.url(f"employees/{ku}/account/"), {"login": "kucharz.ku"}, format="json").status_code, 200)
+        self.assertEqual(kk.post(self.url(f"employees/{re_}/account/"), {"login": "obca.osoba"}, format="json").status_code, 404)
+        self.assertEqual(kk.post(self.url(f"employees/{dx}/invite/")).status_code, 404)  # director: no department
+        self.assertEqual(kk.patch(self.url(f"employees/{ku}/"), {"name": "Ku", "role": "kierownik"}, format="json").status_code, 403)
+        self.assertEqual(kk.delete(self.url(f"employees/{self.p['kk'].id}/"), {}, format="json").status_code, 403)  # himself: a manager
+        self.assertEqual(kk.post(self.url("points/"), {"name": "X"}, format="json").status_code, 403)
+
+
+class InvitationTests(Base):
+    def invite(self, key="sp", by="dx"):
+        r = self.api(by).post(self.url(f"employees/{self.p[key].id}/invite/"))
+        self.assertEqual(r.status_code, 200, r.content)
+        return r.json()["invite_path"].rsplit("/", 1)[1]
+
+    def test_link_lets_the_employee_choose_login_and_password_once(self):
+        made = self.api("kk").post(self.url("employees/"), {"name": "Żaneta Łącka"}, format="json").json()
+        self.p["sp"] = Employee.objects.get(pk=made["id"])  # the manager's new cook, invited by the manager
+        secret = self.invite(by="kk")
+        guest = APIClient(enforce_csrf_checks=True)
+        info = guest.get(f"/api/invite/{secret}/").json()
+        self.assertEqual((info["name"], info["workplace"], info["login"]), ("Żaneta Łącka", "Bistro X", "zaneta.lacka"))
+        self.assertEqual(guest.post(f"/api/invite/{secret}/", {"login": "ewa.s", "password": PASSWORD}, format="json").status_code, 403)  # no CSRF
+        guest = APIClient()
+        done = guest.post(f"/api/invite/{secret}/", {"login": "Ewa.S", "password": PASSWORD}, format="json")
+        self.assertEqual(done.status_code, 200, done.content)
+        self.assertEqual(guest.get("/api/session/").json()["user"], "ewa.s")  # signed in right away
+        self.assertEqual(guest.get(self.url("today/")).status_code, 200)
+        self.p["sp"].refresh_from_db()
+        self.assertEqual((self.p["sp"].user.username, self.p["sp"].invite_hash), ("ewa.s", ""))
+        self.assertEqual(APIClient().get(f"/api/invite/{secret}/").status_code, 404)  # one use
+        self.assertEqual(self.api("dx").post(self.url(f"employees/{self.p['sp'].id}/invite/")).status_code, 409)
+
+    def test_bad_links_and_inputs_create_nothing(self):
+        secret = self.invite()
+        guest = APIClient()
+        users = get_user_model().objects.count()
+        for bad in ({"login": "ewa", "password": "krotkie"}, {"login": "ż", "password": PASSWORD}, {"login": "ku", "password": PASSWORD},
+                    {"login": "dx", "password": PASSWORD}, {"password": PASSWORD}, {"login": "ewa", "password": 7}, []):
+            with self.subTest(bad=bad):
+                self.assertIn(guest.post(f"/api/invite/{secret}/", bad, format="json").status_code, (400, 409))
+        for wrong in ("x", "a" * 43, ""):
+            self.assertEqual(guest.get(f"/api/invite/{wrong or '-'}/").status_code, 404)
+        newer = self.invite()  # a new link retires the old one
+        self.assertEqual(guest.get(f"/api/invite/{secret}/").status_code, 404)
+        self.assertEqual(self.api("dx").delete(self.url(f"employees/{self.p['sp'].id}/invite/"), {}, format="json").status_code, 200)
+        self.assertEqual(guest.get(f"/api/invite/{newer}/").status_code, 404)  # cancelled
+        expiring = self.invite()
+        with at(60 * 24 * 365):
+            self.assertEqual(guest.get(f"/api/invite/{expiring}/").status_code, 404)
+        self.assertEqual(get_user_model().objects.count(), users)
+
+    def test_archived_or_foreign_people_get_no_invitation(self):
+        self.p["sp"].active = False
+        self.p["sp"].save()
+        self.assertEqual(self.api("dx").post(self.url(f"employees/{self.p['sp'].id}/invite/")).status_code, 409)
+        self.assertEqual(self.api("dy").post(self.url(f"employees/{self.p['ku'].id}/invite/")).status_code, 404)
+        self.assertEqual(self.api("re").post(self.url(f"employees/{self.p['ku'].id}/invite/")).status_code, 403)
+
+
+class SeedTests(TestCase):
+    @override_settings(DEBUG=False)
+    def test_demo_needs_its_own_password_on_a_server(self):
+        from django.core.management.base import CommandError
+
+        with mock.patch.dict("os.environ", {"DEMO_PASSWORD": ""}), self.assertRaises(CommandError):
+            call_command("seed_demo")
+        self.assertFalse(Workplace.objects.exists())

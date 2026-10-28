@@ -92,7 +92,8 @@ await step("zespół: nowy pracownik z loginem, hasło pokazane raz", async () =
   await desk.getByRole("link", { name: "Zespół i NFC" }).click();
   await desk.getByRole("button", { name: "Dodaj pracownika" }).click();
   await desk.getByLabel("Imię i nazwisko").fill("Ewa E2E");
-  await desk.getByLabel("Login (opcjonalnie)").fill(`ewa.e2e${Date.now() % 100000}`);
+  await desk.getByText("Nadam login i hasło").click(); // segmented: the radio itself is hidden
+  await desk.getByLabel("Login", { exact: true }).fill(`ewa.e2e${Date.now() % 100000}`);
   await desk.getByRole("button", { name: "Dodaj", exact: true }).click();
   await expectText(desk, "przekaż je teraz");
   newPassword = await desk.locator(".notice.secret strong").nth(2).innerText();
@@ -174,6 +175,35 @@ await step("czas pracy: zestawienie, szczegóły osoby, CSV", async () => {
   const href = await desk.getByRole("link", { name: "Pobierz CSV" }).getAttribute("href");
   const csv = await desk.evaluate(async (u) => (await fetch(u)).text(), href);
   if (!csv.includes("Pracownik;Dział;Plan")) throw new Error("CSV bez nagłówka");
+});
+
+await step("kierownik: nowy pracownik z zaproszeniem, pracownik sam zakłada konto (raz)", async () => {
+  const mgr = await browser.newPage(PL);
+  await mgr.goto(`${BASE}/panel`);
+  await login(mgr, "kuchnia-kier");
+  await mgr.getByRole("link", { name: "Zespół", exact: true }).click();
+  await expectText(mgr, "Pracownicy twojego działu");
+  if (await mgr.getByText("Punkty odbić (NFC)").count()) throw new Error("kierownik widzi punkty NFC");
+  await mgr.getByRole("button", { name: "Dodaj pracownika" }).click();
+  await mgr.getByLabel("Imię i nazwisko").fill("Zenon Zaproszony");
+  await mgr.getByRole("button", { name: "Dodaj", exact: true }).click(); // default: an invitation link
+  await expectText(mgr, "Zaproszenie dla");
+  const link = await mgr.locator(".notice.secret code").innerText();
+  await shot(mgr, "11a-zaproszenie");
+  const invitee = await phone.newPage();
+  await invitee.goto(link);
+  await expectText(invitee, "Witaj, Zenon Zaproszony");
+  await invitee.getByLabel("Login", { exact: true }).fill(`zenon${Date.now() % 100000}`);
+  await invitee.getByLabel("Hasło", { exact: true }).fill(PASSWORD);
+  await invitee.getByLabel("Powtórz hasło").fill(PASSWORD);
+  await shot(invitee, "11b-zaproszenie-telefon");
+  await invitee.getByRole("button", { name: "Załóż konto" }).click();
+  await invitee.waitForURL("**/panel");
+  await invitee.getByRole("heading", { name: "Dziś" }).waitFor();
+  await invitee.goto(link);
+  await expectText(invitee, "Zaproszenie nie działa");
+  await mgr.reload();
+  await expectText(mgr, "Zenon Zaproszony");
 });
 
 // English: an en-GB browser gets English everywhere. Polish letters left on a page = a text missed by t().

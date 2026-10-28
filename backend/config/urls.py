@@ -24,6 +24,7 @@ urlpatterns = [
     path(f"{W}/employees/<uuid:employee_id>/", g.employee),
     path(f"{W}/employees/<uuid:employee_id>/account/", g.employee_account),
     path(f"{W}/employees/<uuid:employee_id>/card/", g.employee_card),
+    path(f"{W}/employees/<uuid:employee_id>/invite/", g.employee_invite),
     path(f"{W}/unknown-cards/", g.unknown_cards),
     path(f"{W}/points/", g.points),
     path(f"{W}/points/<uuid:point_id>/", g.point),
@@ -47,4 +48,5 @@ urlpatterns = [
     # NFC
     path("api/nfc/<str:tag_token>/", g.nfc),
     path("api/kiosk/<str:secret>/", g.kiosk),
+    path("api/invite/<str:secret>/", g.invitation),
 ]

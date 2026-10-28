@@ -57,6 +57,7 @@ export type Department = { id: string; name: string; color: string; people: numb
 export type Employee = {
   id: string; name: string; role: Exclude<Role, "admin">; active: boolean; department: string | null;
   card: string | null; login: string | null; last_login: string | null; me: boolean; password?: string;
+  invited_until: string | null; invite_path?: string;
 };
 export type Shift = { id: string; employee: string; date: string; start: string; end: string; notes: string; minutes: number };
 export type Away = { id: string; employee: string; date_from: string; date_to: string; kind: "urlop" | "l4" | "inne"; kind_label: string; note: string; conflicts?: Shift[] };

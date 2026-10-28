@@ -50,3 +50,14 @@
 - Pierwszy krok EN w E2E skanował strony panelu, zanim doszły dane (trasa po stronie klienta, `networkidle` mijał od razu) —
   test był zielony na pustych stronach. Teraz czeka na odpowiedź API i treść.
 - `copy_week` zwracał pominięte zmiany przez `str(error)` — zawsze po polsku; teraz przez `error_body`.
+- Zaproszenia: kierownik ma zakładkę „Zespół” (pracownicy swojego działu: dodaj, zmień, usuń/archiwizuj, login, karta,
+  zaproszenie). Zaproszenie = jednorazowy link `/zaproszenie/<token>` (sha256 w bazie, 7 dni), kopiuj / udostępnij / QR;
+  pracownik sam ustawia login i hasło i jest od razu zalogowany. `seed_demo` na serwerze wymaga `DEMO_PASSWORD`.
+  Testy 68/68 (SQLite + Postgres), `i18n.check` 376 tekstów, E2E 14/14. Lokalnie gotowe; wdrożenie i demo na produkcji
+  zablokowane przez tryb uprawnień — czeka na zgodę usera (OpenProject).
+### Zadziałało (zaproszenia)
+- Jedna reguła `team.manageable` dla wszystkich akcji na osobie — kierownik dostał uprawnienia bez rozsiewania warunków.
+- Bramka EN od razu wyłapała nowe teksty bez tłumaczenia i martwe wpisy po usuniętym polu „Login (opcjonalnie)”.
+### Nie zadziałało (zaproszenia)
+- „Błąd DRF po angielsku” okazał się artefaktem testu (ciasteczko `en` wysłane ręcznie) — w PL DRF już mówi po polsku.
+- E2E: `check()` na przycisku wyboru w `Segmented` czekał w nieskończoność (radio ukryte, klika się etykietę).
