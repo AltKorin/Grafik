@@ -3,6 +3,7 @@
 # (after the dump, so erased rows live on only in backups that expire within 14 days).
 # cron: 15 3 * * * /opt/grafik/deploy/backup.sh >> /opt/grafik/deploy/backups/backup.log 2>&1
 set -euo pipefail
+umask 077  # dumps hold personal data: root only
 cd "$(dirname "$0")/.."
 mkdir -p deploy/backups
 file="deploy/backups/grafik-$(date +%Y%m%d-%H%M).dump"

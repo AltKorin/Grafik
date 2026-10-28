@@ -1,7 +1,7 @@
 # HANDOFF — Grafik
 
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
-stosie Docker. **Nie wdrożone.** Kolejka prac: OpenProject, projekt `grafik`.
+stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
 ## Dokumenty
 - `PLAN.md` — ustalenia z userem (§1), role (§2), reguły grafiku/wniosków/NFC (§3–5), poza zakresem (§7), paleta (§9).
@@ -36,7 +36,7 @@ stosie Docker. **Nie wdrożone.** Kolejka prac: OpenProject, projekt `grafik`.
 - Strefa czasowa per firma (`Workplace.timezone`); `TIME_ZONE=UTC` w ustawieniach.
 
 ## Do wdrożenia (czeka na usera)
-1. LXC na proxmox-hp + domena `grafik.sudomie.pl` + tunel Cloudflare (wzór: HotelAgenda `deploy/PROXMOX-HP.md`; `deploy/push.sh`, `deploy/deploy.sh`, `deploy/env.production.example`).
+1. ~~Wdrożenie~~ — zrobione 28.10. Aktualizacja: `deploy/push.sh grafik-prod:/opt/grafik` → `ssh grafik-prod 'cd /opt/grafik && deploy/deploy.sh'` → `deploy/smoke.sh https://grafik.sudomie.pl`. Zostaje rezerwacja DHCP (router).
 2. Sekcja `#grafik` w polityce prywatności sudomie.pl (link w stopce i regulaminie już na nią wskazuje).
 3. Przegląd regulaminu (`backend/grafik/data/regulamin.html`, § 2 ust. 2 o ewidencji czasu pracy, § 8 powierzenie).
 4. Test na prawdziwych naklejkach NTAG213 i czytniku USB.

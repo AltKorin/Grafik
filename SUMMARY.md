@@ -21,3 +21,19 @@
 ### Następne kroki
 - 2026-10-28: repo wypchnięte jako publiczne AltKorin/Grafik (#428 zamknięte).
 - Zostało niewdrożone: produkcja na proxmox-hp, polityka prywatności `#grafik`, przegląd regulaminu, test na prawdziwych naklejkach i czytniku — zadania w OpenProject (`grafik`).
+
+## Sesja 2026-10-28
+### Zrobiono
+- Publiczne repo https://github.com/AltKorin/Grafik (README, poprawiony `.gitignore`).
+- Produkcja https://grafik.sudomie.pl: LXC 108 (`deploy/lxc-create.sh` — jedna komenda Konrada na hypervisorze,
+  klucz deploy wbudowany), `.env` z sekretami z serwera, `deploy.sh` (testy 55/55 na serwerze), tunel `grafik`
+  z terminala, smoke HTTPS 10/10, admin `konrad`, cron backupu + pierwszy backup.
+### Zadziałało
+- Skrypt LXC z wbudowanym kluczem publicznym — Konrad wkleja jedną linię zamiast trzech kroków.
+- `tunnel login` zostawiony na 10 min: cloudflared sam ściągnął `cert.pem` na serwer, bez pobierania w przeglądarce.
+### Nie zadziałało
+- Pierwszy `tunnel login` ubity `timeout 25` po wyciągnięciu linku — autoryzacja przepadła, przeglądarka nic nie pobrała.
+- Wpis crona nie zapisał się przy pierwszym podejściu (na świeżym LXC nie było pakietu `cron`) — doinstalowany, wpis ponowiony.
+- Backup bazy powstawał z prawami 644 (dane osobowe czytelne dla każdego konta) — `umask 077` w `backup.sh`; ten sam problem jest w HotelAgenda.
+### Następne kroki
+- Rezerwacja DHCP dla LXC 108 na routerze; polityka prywatności `#grafik`, przegląd regulaminu, test prawdziwego NFC — OpenProject.
