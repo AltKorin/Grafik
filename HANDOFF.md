@@ -36,6 +36,9 @@ stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias
 - Strefa czasowa per firma (`Workplace.timezone`); `TIME_ZONE=UTC` w ustawieniach.
 - **`ssh host 'bash -s' <<EOF` + `deploy.sh`**: `docker compose exec -T` w środku czyta stdin, czyli resztę heredoca —
   dalsze polecenia znikają bez błędu (28.10). `deploy.sh` uruchamiaj osobnym `ssh … 'cd /opt/grafik && deploy/deploy.sh'`.
+- **Demo bez rejestracji** (`grafik/demo.py`): „Wypróbuj demo” = własna kopia Bistro Demo w sesji, konta bez hasła,
+  `Workplace.demo_until`; wygasłe usuwa start kolejnego demo (z kontami). Flaga `DEMO_MAX` (0 = przycisk ukryty, kod domyślnie 0;
+  produkcja 200), `DEMO_HOURS`, `THROTTLE_DEMO`. Superuser nie widzi piaskownic. `seed_demo` i piaskownica używają `demo.build`.
 - **Zaproszenia**: `Employee.invite_hash` (sha256, jednorazowe, `INVITE_DAYS`), publiczne `/api/invite/<token>/` (CSRF + throttle
   `invite` na POST). Kierownik zarządza tylko pracownikami (rola pracownik) swojego działu — reguła w `team.manageable`.
   `seed_demo` na serwerze (`DEBUG=0`) wymaga `DEMO_PASSWORD` — zapasowe hasło jest w publicznym repo.

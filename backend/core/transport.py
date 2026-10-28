@@ -8,6 +8,7 @@ from rest_framework.exceptions import ParseError, APIException
 from rest_framework.parsers import JSONParser
 
 from .domain_errors import DomainError
+from .i18n import error_body, tr
 
 MAX_JSON_DEPTH = 32
 MAX_JSON_VALUES = 50000
@@ -15,11 +16,11 @@ MAX_JSON_VALUES = 50000
 
 def storage_string(value):
     if not isinstance(value, str) or "\x00" in value:
-        raise DomainError("Invalid storage text")
+        raise DomainError("Nieprawidłowy tekst")
     try:
         value.encode("utf-8")
     except UnicodeEncodeError:
-        raise DomainError("Invalid storage text") from None
+        raise DomainError("Nieprawidłowy tekst") from None
     return value
 
 
@@ -32,7 +33,7 @@ def bounded_json(value):
         item, depth = todo.pop()
         count += 1
         if depth > MAX_JSON_DEPTH or count > MAX_JSON_VALUES:
-            raise DomainError("JSON structure exceeds limits")
+            raise DomainError("Dane JSON są zbyt duże albo zbyt zagnieżdżone")
         if isinstance(item, str):
             storage_string(item)
         elif isinstance(item, dict):
@@ -43,9 +44,9 @@ def bounded_json(value):
             todo.extend((child, depth + 1) for child in item)
         elif isinstance(item, float):
             if not math.isfinite(item):
-                raise DomainError("Invalid JSON number")
+                raise DomainError("Nieprawidłowa liczba w danych JSON")
         elif item is not None and type(item) not in (bool, int):
-            raise DomainError("Invalid JSON value")
+            raise DomainError("Nieprawidłowa wartość w danych JSON")
     return value
 
 
@@ -55,7 +56,7 @@ class BoundedJSONParser(JSONParser):
         limit = settings.DATA_UPLOAD_MAX_MEMORY_SIZE
         raw = stream.read(limit + 1)
         if len(raw) > limit:
-            raise ParseError("Request body exceeds limits")
+            raise ParseError(tr("Treść zapytania jest za duża"))
         import io
 
         try:
@@ -63,9 +64,9 @@ class BoundedJSONParser(JSONParser):
                 super().parse(io.BytesIO(raw), media_type, parser_context)
             )
         except (RecursionError, OverflowError):
-            raise ParseError("JSON structure exceeds limits") from None
+            raise ParseError(tr("Dane JSON są zbyt duże albo zbyt zagnieżdżone")) from None
         except DomainError as error:
-            raise ParseError(str(error)) from error
+            raise ParseError(error_body(error)["error"]) from error
 
 
 class DependencyUnavailable(APIException):

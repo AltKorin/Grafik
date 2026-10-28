@@ -62,6 +62,6 @@ def employee_in(workplace, employee_id, lock=False):
 
 
 def workplaces_for(user):
-    if user.is_superuser:
-        return Workplace.objects.order_by("name")
+    if user.is_superuser:  # all real firms; visitors' demo sandboxes are not the agency's business
+        return Workplace.objects.filter(demo_until__isnull=True).order_by("name")
     return Workplace.objects.filter(employees__user=user, employees__active=True).order_by("name").distinct()

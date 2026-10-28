@@ -526,12 +526,17 @@ def delete_workplace(user, workplace_id, data):
     typed = domain.body_object(data).get("confirm")
     if not isinstance(typed, str) or typed.strip() != w.name.strip():
         raise DomainError("Wpisz dokładną nazwę firmy, żeby potwierdzić usunięcie")
+    removed = erase_workplace(w)
+    for account in removed:
+        anonymize(account)
+    return {"deleted": True, "account_removed": any(a.pk == user.pk for a in removed)}
+
+
+def erase_workplace(w):
+    """The firm, its punches and its history rows go; returns the accounts left without any firm."""
     accounts = [e.user for e in w.employees.select_related("user") if e.user]
     employee_ids = list(Employee.history.filter(workplace_id=w.pk).values_list("id", flat=True).distinct())
     pk = w.pk
     w.delete()  # punches go with it: queryset cascade never calls Punch.delete()
     purge_history(pk, employee_ids)
-    removed = [a for a in accounts if not a.is_superuser and not a.employments.exists()]
-    for account in removed:
-        anonymize(account)
-    return {"deleted": True, "account_removed": any(a.pk == user.pk for a in removed)}
+    return [a for a in accounts if not a.is_superuser and not a.employments.exists()]

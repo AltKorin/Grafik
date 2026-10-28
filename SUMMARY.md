@@ -61,3 +61,11 @@
 ### Nie zadziałało (zaproszenia)
 - „Błąd DRF po angielsku” okazał się artefaktem testu (ciasteczko `en` wysłane ręcznie) — w PL DRF już mówi po polsku.
 - E2E: `check()` na przycisku wyboru w `Segmented` czekał w nieskończoność (radio ukryte, klika się etykietę).
+- Zaproszenia + Bistro Demo wdrożone na produkcję (commit ec1f5fd; dane demo w /root/grafik-demo.txt).
+- Demo bez rejestracji: przycisk „Wypróbuj demo” na stronie głównej — każdy odwiedzający dostaje własną kopię firmy
+  przykładowej na 24 h, „Zobacz jako: dyrektor / kierownik / pracownik”, kiosk w nowej karcie, odbicie telefonem.
+  Limit kopii (`DEMO_MAX`, 503 ponad limit), throttle na IP, konta bez haseł, z demo nie da się założyć prawdziwej firmy,
+  superuser nie widzi piaskownic. Testy 73/73, E2E 15/15.
+### Nie zadziałało (demo)
+- `ssh host 'bash -s' <<EOF` z `deploy.sh` w środku: `docker compose exec -T` zjadł resztę skryptu — seed się nie wykonał, bez błędu.
+- Bramka EN skanowała stałą listę plików — nowy `grafik/demo.py` by się prześlizgnął; dopisany do listy (lista jest w teście).

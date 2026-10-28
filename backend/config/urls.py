@@ -49,4 +49,6 @@ urlpatterns = [
     path("api/nfc/<str:tag_token>/", g.nfc),
     path("api/kiosk/<str:secret>/", g.kiosk),
     path("api/invite/<str:secret>/", g.invitation),
+    path("api/demo/", g.demo_start),
+    path("api/demo/as/", g.demo_as),
 ]

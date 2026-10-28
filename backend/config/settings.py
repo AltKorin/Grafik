@@ -104,6 +104,7 @@ REST_FRAMEWORK = {
         "kiosk": os.environ.get("THROTTLE_KIOSK", "120/minute"),
         "registration": os.environ.get("THROTTLE_REGISTRATION", "5/hour"),
         "invite": os.environ.get("THROTTLE_INVITE", "30/hour"),
+        "demo": os.environ.get("THROTTLE_DEMO", "10/hour"),
     },
     "NUM_PROXIES": 1,
 }
@@ -148,6 +149,10 @@ MAX_SHIFT_HOURS = int(os.environ.get("MAX_SHIFT_HOURS", "16"))
 MAX_FIRMS_PER_ACCOUNT = int(os.environ.get("MAX_FIRMS_PER_ACCOUNT", "10"))
 # An invitation link for an employee stays valid this many days (one use).
 INVITE_DAYS = int(os.environ.get("INVITE_DAYS", "7"))
+# Public sandbox demo (grafik.demo): at most DEMO_MAX copies at once, each erased after DEMO_HOURS.
+# DEMO_MAX=0 switches the „Wypróbuj demo” button off (CLAUDE.md: feature flag, on per deployment).
+DEMO_MAX = int(os.environ.get("DEMO_MAX", "0"))
+DEMO_HOURS = int(os.environ.get("DEMO_HOURS", "24"))
 # RODO retention (komenda `retencja_danych`, cron): login trail kept this many days.
 RETENCJA_LOGIN_DNI = int(os.environ.get("RETENCJA_LOGIN_DNI", "365"))
 # GA4 on public pages only (landing, rejestracja, regulamin); empty = no tag. Shape-checked: it lands in a script URL.

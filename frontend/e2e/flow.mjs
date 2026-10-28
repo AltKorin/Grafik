@@ -187,7 +187,7 @@ await step("kierownik: nowy pracownik z zaproszeniem, pracownik sam zakłada kon
   await mgr.getByRole("button", { name: "Dodaj pracownika" }).click();
   await mgr.getByLabel("Imię i nazwisko").fill("Zenon Zaproszony");
   await mgr.getByRole("button", { name: "Dodaj", exact: true }).click(); // default: an invitation link
-  await expectText(mgr, "Zaproszenie dla");
+  await expectText(mgr, "Zaproszenie:");
   const link = await mgr.locator(".notice.secret code").innerText();
   await shot(mgr, "11a-zaproszenie");
   const invitee = await phone.newPage();
@@ -204,6 +204,24 @@ await step("kierownik: nowy pracownik z zaproszeniem, pracownik sam zakłada kon
   await expectText(invitee, "Zaproszenie nie działa");
   await mgr.reload();
   await expectText(mgr, "Zenon Zaproszony");
+});
+
+await step("demo bez rejestracji: własna kopia, zmiana roli, kiosk", async () => {
+  const visitor = await browser.newPage(PL);
+  await visitor.goto(BASE);
+  await visitor.getByRole("button", { name: "Wypróbuj demo — bez rejestracji" }).first().click();
+  await visitor.waitForURL("**/panel");
+  await expectText(visitor, "Twoja własna kopia firmy przykładowej");
+  await visitor.getByRole("link", { name: "Zespół i NFC" }).waitFor();
+  await shot(visitor, "11c-demo-dyrektor");
+  await visitor.getByRole("button", { name: "Pracownik", exact: true }).click();
+  await expectText(visitor, "Odbij się telefonem");
+  if (await visitor.getByRole("link", { name: "Zespół i NFC" }).count()) throw new Error("pracownik widzi Zespół");
+  const [kioskTab] = await Promise.all([visitor.waitForEvent("popup"), visitor.getByRole("link", { name: /Kiosk \(tablet\)/ }).click()]);
+  await expectText(kioskTab, "Przyłóż kartę");
+  await kioskTab.keyboard.type("04A1B2C3");
+  await kioskTab.keyboard.press("Enter");
+  await expectText(kioskTab, "Anna Nowak");
 });
 
 // English: an en-GB browser gets English everywhere. Polish letters left on a page = a text missed by t().

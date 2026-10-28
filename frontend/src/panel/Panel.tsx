@@ -2,6 +2,7 @@ import "../fonts.css";
 import { useEffect, useState, type FormEvent } from "react";
 import { PRIVACY } from "../site/Site.tsx";
 import { api, loadSession, logIn, logOut, useApi, type Workplace } from "./api.ts";
+import { DemoBar } from "./Demo.tsx";
 import Requests from "./Requests.tsx";
 import Team from "./Team.tsx";
 import Time from "./Time.tsx";
@@ -163,6 +164,7 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
 
   return (
     <>
+      <DemoBar />
       <header className="topbar">
         <span className="firm">
           {list.length > 1 ? (
@@ -185,7 +187,8 @@ function Signed({ user, onLogout }: { user: string; onLogout: () => void }) {
           ))}
         </nav>
         <LangSwitch />
-        <span className="who">{user}</span>
+        {/* ponytail: sandbox logins (grafik.demo) are technical; the demo bar names the role instead */}
+        {!user.startsWith("demo-") && <span className="who">{user}</span>}
         <button className="link" onClick={() => logOut().then(onLogout)}>
           {t("Wyloguj")}
         </button>

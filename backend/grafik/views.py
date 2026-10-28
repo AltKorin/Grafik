@@ -13,7 +13,7 @@ from core.domain_errors import DomainError
 from core.i18n import error_body, tr
 from core.views import PostThrottle, csrf_denied
 
-from . import clock, schedule, team
+from . import clock, demo, schedule, team
 
 
 class KioskThrottle(AnonRateThrottle):
@@ -22,6 +22,10 @@ class KioskThrottle(AnonRateThrottle):
 
 class InviteThrottle(PostThrottle):
     scope = "invite"
+
+
+class DemoThrottle(PostThrottle):
+    scope = "demo"
 
 
 def answer(fn):
@@ -189,3 +193,27 @@ def invitation(request, secret):
             return Response({"error": tr("Błąd weryfikacji CSRF")}, status=403)
         return team.accept_invitation(request, secret, request.data)
     return team.invitation_info(secret)
+
+
+# --- public demo: „Wypróbuj demo” gives the visitor an own sandbox firm (grafik.demo) ---------------------------
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+@throttle_classes([DemoThrottle])
+@answer
+def demo_start(request):
+    if request.method == "POST":
+        if csrf_denied(request):
+            return Response({"error": tr("Błąd weryfikacji CSRF")}, status=403)
+        return demo.start(request)
+    return demo.info(request)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # the sandbox lives in the session; switching needs no login of its own
+@answer
+def demo_as(request):
+    if csrf_denied(request):
+        return Response({"error": tr("Błąd weryfikacji CSRF")}, status=403)
+    return demo.switch(request, request.data)

@@ -1,5 +1,6 @@
 // Landing: the product shown with a fictional week (the real grid styles) and the two ways of punching.
 import { t } from "../i18n.ts";
+import { DemoButton } from "../panel/Demo.tsx";
 
 const DAYS = [t("pon"), t("wt"), t("śr"), t("czw"), t("pt")];
 const PEOPLE: { name: string; color: string; cells: (string | null)[] }[] = [
@@ -24,6 +25,7 @@ export default function Landing() {
           </p>
           <p className="hero-actions">
             <a className="btn primary big" href="/rejestracja">{t("Załóż konto za darmo")}</a>
+            <DemoButton />
             <a className="btn big" href="#jak-to-dziala">{t("Jak to działa")}</a>
           </p>
         </div>
@@ -108,6 +110,7 @@ export default function Landing() {
         </dl>
         <p className="hero-actions">
           <a className="btn primary big" href="/rejestracja">{t("Załóż konto za darmo")}</a>
+          <DemoButton />
         </p>
       </section>
     </main>

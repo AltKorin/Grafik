@@ -13,6 +13,8 @@ class Workplace(models.Model):
     name = models.CharField(max_length=200)
     timezone = models.CharField(max_length=64, default="Europe/Warsaw")
     created_at = models.DateTimeField(auto_now_add=True)
+    # A visitor's sandbox from „Wypróbuj demo” (grafik.demo): erased after this moment. Empty = a real firm.
+    demo_until = models.DateTimeField(null=True, blank=True, db_index=True)
     history = HistoricalRecords()
 
     def __str__(self):

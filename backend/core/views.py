@@ -119,4 +119,4 @@ def terms(request):
 @permission_classes([AllowAny])
 def public_config(request):
     # Empty id = no analytics tag at all (CLAUDE.md: feature flag, switched on per deployment).
-    return Response({"ga_measurement_id": settings.GA_MEASUREMENT_ID})
+    return Response({"ga_measurement_id": settings.GA_MEASUREMENT_ID, "demo": settings.DEMO_MAX > 0})

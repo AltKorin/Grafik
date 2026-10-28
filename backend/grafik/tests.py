@@ -526,3 +526,65 @@ class SeedTests(TestCase):
         with mock.patch.dict("os.environ", {"DEMO_PASSWORD": ""}), self.assertRaises(CommandError):
             call_command("seed_demo")
         self.assertFalse(Workplace.objects.exists())
+
+
+@override_settings(DEMO_MAX=3, DEMO_HOURS=24)
+class SandboxDemoTests(TestCase):
+    """„Wypróbuj demo”: every visitor gets an own firm, can look as any role, and it all disappears."""
+
+    def setUp(self):
+        cache.clear()  # the per-IP limit on new demos would carry over between tests
+
+    def visitor(self):
+        client = APIClient()
+        started = client.post("/api/demo/", format="json")
+        self.assertEqual(started.status_code, 200, started.content)
+        return client, started.json()["demo"]
+
+    def test_visitor_gets_own_firm_as_director_and_can_switch_roles(self):
+        a, demo_a = self.visitor()
+        b, demo_b = self.visitor()
+        self.assertNotEqual(demo_a["workplace"], demo_b["workplace"])
+        self.assertEqual(demo_a["role"], "dyrektor")
+        firm = demo_a["workplace"]
+        self.assertEqual([w["id"] for w in a.get("/api/workplaces/").json()], [firm])
+        self.assertEqual(a.get(f"/api/w/{firm}/points/").status_code, 200)
+        self.assertEqual(b.get(f"/api/w/{firm}/week/").status_code, 404)  # the other visitor's firm
+        self.assertEqual(a.post("/api/demo/as/", {"role": "pracownik"}, format="json").json()["demo"]["role"], "pracownik")
+        self.assertEqual(a.get(f"/api/w/{firm}/points/").status_code, 403)  # now really an employee
+        self.assertEqual(a.post(demo_a["tag"].replace("/nfc/", "/api/nfc/") + "/").json()["kind"], "in")  # the sticker works
+        self.assertEqual(a.post("/api/demo/as/", {"role": "admin"}, format="json").status_code, 400)
+        self.assertEqual(APIClient().post("/api/demo/as/", {"role": "dyrektor"}, format="json").status_code, 404)
+
+    def test_demo_accounts_have_no_password_and_found_no_firms(self):
+        client, demo = self.visitor()
+        login = Employee.objects.get(workplace_id=demo["workplace"], role="dyrektor").user.username
+        self.assertFalse(get_user_model().objects.get(username=login).has_usable_password())
+        self.assertEqual(APIClient().post("/api/session/", {"username": login, "password": ""}, format="json").status_code, 400)
+        self.assertEqual(client.post("/api/workplaces/", {"firm": "Prawdziwa", "name": "X", "accept": True}, format="json").status_code, 403)
+
+    def test_limit_csrf_and_switch_off(self):
+        for _ in range(3):
+            self.visitor()
+        self.assertEqual(APIClient().post("/api/demo/", format="json").status_code, 503)  # backpressure
+        self.assertEqual(APIClient(enforce_csrf_checks=True).post("/api/demo/", format="json").status_code, 403)
+        with override_settings(DEMO_MAX=0):
+            self.assertEqual(APIClient().post("/api/demo/", format="json").status_code, 503)
+            self.assertFalse(APIClient().get("/api/public-config/").json()["demo"])
+
+    def test_expired_sandbox_disappears_with_its_accounts(self):
+        client, demo = self.visitor()
+        users = get_user_model().objects.count()
+        with at(60 * 25):
+            self.assertIsNone(client.get("/api/demo/").json()["demo"])
+            fresh, _ = self.visitor()  # starting a new one sweeps the expired ones
+        self.assertFalse(Workplace.objects.filter(pk=demo["workplace"]).exists())
+        self.assertEqual(get_user_model().objects.count(), users)  # 5 gone, 5 new
+
+    def test_superuser_does_not_see_sandboxes(self):
+        self.visitor()
+        real = Workplace.objects.create(name="Prawdziwa")
+        admin = get_user_model().objects.create_superuser("szef", password=PASSWORD)
+        client = APIClient()
+        client.force_authenticate(admin)
+        self.assertEqual([w["id"] for w in client.get("/api/workplaces/").json()], [str(real.id)])

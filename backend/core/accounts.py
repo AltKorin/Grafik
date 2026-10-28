@@ -112,6 +112,8 @@ def add_firm(request, data):
     if data.get("accept") is not True:
         raise DomainError("Zaakceptuj regulamin, żeby założyć firmę")
     user = get_user_model().objects.select_for_update().get(pk=request.user.pk)  # two submits at once count once
+    if Employee.objects.filter(user=user, workplace__demo_until__isnull=False).exists():
+        raise DomainError("W demo nie zakłada się firm — załóż własne konto na stronie głównej", 403)
     if Employee.objects.filter(user=user, role="dyrektor").count() >= settings.MAX_FIRMS_PER_ACCOUNT:
         raise DomainError("Jedno konto może prowadzić najwyżej {limit} firm", 409, limit=settings.MAX_FIRMS_PER_ACCOUNT)
     return found_firm(request, user, firm_name, person)

@@ -2,7 +2,7 @@
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from .models import LoginEvent
@@ -196,12 +196,13 @@ class RegistrationTests(TestCase):
             self.csrf = self.client.get("/api/session/").json()["csrf"]
         self.assertEqual(self.register(email="r9@hotel.pl").status_code, 429)
 
+    @override_settings(DEMO_MAX=0)  # the server .env switches the demo on; this test is about the defaults
     def test_terms_and_public_config_are_public(self):
         anonymous = APIClient()
         terms = anonymous.get("/api/terms/").json()
         self.assertIn("Usługodawca", terms["html"])
         self.assertRegex(terms["version"], r"^\d{4}-\d{2}-\d{2}$")
-        self.assertEqual(anonymous.get("/api/public-config/").json(), {"ga_measurement_id": ""})
+        self.assertEqual(anonymous.get("/api/public-config/").json(), {"ga_measurement_id": "", "demo": False})
 
 
 class PasswordChangeTests(TestCase):
@@ -251,8 +252,7 @@ class RetentionTests(TestCase):
 class EnglishTests(TestCase):
     """Every Polish message the API can send has an English twin with the same {params} (core.i18n)."""
 
-    SOURCES = ["core/accounts.py", "core/views.py", "grafik/access.py", "grafik/clock.py", "grafik/domain.py",
-               "grafik/schedule.py", "grafik/team.py"]
+    APPS = ["core", "grafik"]  # every module of these apps except the tests: a new file is scanned on its own
     # call → (positional index, keyword) of the field label it turns into a message
     LABELS = {"identifier": (1, "what"), "text": (4, "label"), "calendar_day": (1, "label"),
               "clock_time": (1, "label"), "local_moment": (2, "label")}
@@ -267,8 +267,9 @@ class EnglishTests(TestCase):
         from django.conf import settings
 
         found = set(EnglishTests.PROBLEMS)
-        for source in EnglishTests.SOURCES:
-            tree = ast.parse((Path(settings.BASE_DIR) / source).read_text(encoding="utf-8"))
+        sources = [f for app in EnglishTests.APPS for f in (Path(settings.BASE_DIR) / app).glob("*.py") if f.name != "tests.py"]
+        for source in sources:
+            tree = ast.parse(source.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     args = node.args.args[len(node.args.args) - len(node.args.defaults):]
