@@ -4,9 +4,10 @@ import { useEffect, useId, useState, type FormEvent, type ReactNode } from "reac
 import { api, loadSession } from "../panel/api.ts";
 import { choose, readChoice, startAnalytics } from "./consent.ts";
 import Landing from "./Landing.tsx";
+import { SUDOMIE_HUB, SUDOMIE_PRODUCTS } from "./sudomie.ts";
 import "../panel/panel.css"; // .btn, .error, .check — shared with the panel
 import "./site.css";
-import { t } from "../i18n.ts";
+import { lang, t } from "../i18n.ts";
 import { LangSwitch } from "../panel/ui.tsx";
 
 export const PRIVACY = "https://sudomie.pl/polityka-prywatnosci.html#grafik";
@@ -46,6 +47,15 @@ function Footer() {
         <a href="mailto:kontakt@sudomie.pl">kontakt@sudomie.pl</a>
         <a href="tel:+48668341191">+48 668 341 191</a>
       </p>
+      <nav className="sudomie-produkty" aria-labelledby="sudomie-tools-title">
+        <strong id="sudomie-tools-title">{t("Narzędzia sudomie")}</strong>
+        <ul>
+          {SUDOMIE_PRODUCTS.map((product) => (
+            <li key={product.id}><a href={product.url} title={product[lang]}>{product.name}</a></li>
+          ))}
+          <li><a href={lang === "en" ? `${SUDOMIE_HUB.url}?lang=en` : SUDOMIE_HUB.url}>{SUDOMIE_HUB[lang]}</a></li>
+        </ul>
+      </nav>
     </footer>
   );
 }

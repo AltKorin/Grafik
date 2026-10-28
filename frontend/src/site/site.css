@@ -50,7 +50,7 @@
   max-width: 1180px; margin: 0 auto;
   display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 32px; align-items: end;
 }
-.demo figure { margin: 0; }
+.demo figure { margin: 0; min-width: 0; }
 .demo figcaption { margin-top: 10px; font-size: 14px; color: var(--ink-soft); text-align: center; }
 .phone-screen {
   height: 420px; border: 10px solid #1b1f24; border-radius: 34px; background: var(--sheet);
@@ -119,3 +119,18 @@
   .site-top nav { gap: 10px; font-size: 15px; }
   .site-brand { font-size: 18px; }
 }
+
+/* Links generated from sudomie.pl/data/produkty.json. */
+.sudomie-produkty {
+  width: 100%; min-width: 0; max-width: 1180px; margin: 20px auto 0;
+  padding-top: 16px; border-top: 1px solid currentColor;
+  font-size: 14px; line-height: 1.8;
+}
+.sudomie-produkty a {
+  display: inline-block; color: inherit; padding: 4px 0;
+  text-decoration: underline; text-underline-offset: .2em;
+}
+.sudomie-produkty a:hover { text-decoration-thickness: 2px; }
+.sudomie-produkty a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.sudomie-produkty ul { display: flex; flex-wrap: wrap; gap: 2px 20px; list-style: none; padding: 0; margin: 4px 0 0; }
+.sudomie-produkty li { margin: 0; }

@@ -4,6 +4,10 @@ Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), 
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
 ## Dokumenty
+- `docs/codex-workflow.md` — procedura pracy Codex i przygotowana ścieżka zadania kiosku offline.
+- Dostęp Codex do OpenProject: konto `codex` (ID 7), token `~/.config/openproject/codex.token` (600).
+  `python3 scripts/openproject.py whoami` / `todo grafik`; zweryfikowane 28.10.2026.
+  Konto bez globalnego admina; członkostwo Grafiku i rola globalna skopiowane z konta `claude`.
 - `PLAN.md` — ustalenia z userem (§1), role (§2), reguły grafiku/wniosków/NFC (§3–5), poza zakresem (§7), paleta (§9).
 - `GLOSSARY.md` — terminy UI (Firma, Dział, Zmiana, Niedyspozycyjność, Wniosek, Punkt odbić, Kiosk, Odbicie…).
 - `docs/weryfikacja.md` — bramki, czego nie sprawdzono, **audyt CRUD**.
@@ -57,4 +61,8 @@ stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias
 ## Repo
 - https://github.com/AltKorin/Grafik (publiczne, MIT), gałąź `main`. Commit/push tylko na prośbę usera.
 
+## Podlinkowanie sudomie — 2026-10-28
 
+Wdrożono stopkę publicznych stron z wygenerowanej listy frontend/src/site/sudomie.ts, PL/EN i link katalogu w bieżącym języku. Poprawiono min-width figury z tabelą demo na telefonie. Build, time.check, i18n.check (388), smoke 10/10, produkcja PL/EN 390/1440 px OK.
+
+Podlinkowanie Grafiku ukończone. Kolejka dalszej pracy pozostaje w OpenProject; temat kiosku offline nie był realizowany. Zadanie źródłowe: [473](https://projekty.sudomie.pl/work_packages/473).

@@ -1,5 +1,26 @@
 # SUMMARY — Grafik
 
+## Sesja 2026-10-28 — przygotowanie Codex do OpenProject
+### Zrobiono
+- Przeczytano nadrzędny `CLAUDE.md`, zasady komunikacji i dokumentację Grafiku oraz OpenProject.
+- Utworzono aktywne konto `codex` (ID 7), bez globalnego administratora, z dostępem do Grafiku
+  i rolą globalną wzorowaną na istniejącym koncie agenta. Osobny token zapisano poza repo (600).
+- Dodano `scripts/openproject.py` oraz `docs/codex-workflow.md`: procedura sesji, blokady,
+  plan realizacji [kiosku offline](https://projekty.sudomie.pl/work_packages/427) i kryteria odbioru.
+### Zadziałało
+- API `/users/me` potwierdziło `codex`, ID 7; odczyt kolejki zwrócił pięć otwartych zadań.
+- Tworzenie konta i członkostw w transakcji zapobiegło częściowej konfiguracji po błędzie.
+### Nie zadziałało
+- Sandbox blokował DNS klienta i uruchomienie SSH; dostęp wykonano po eskalacji uprawnień.
+- Model User w tej wersji OpenProject nie ma `mail_notification=`. Usunięto nieobsługiwane
+  ustawienie i ponowiono transakcję; konto powstało poprawnie.
+### Następne kroki
+- Gotowa procedura pozwala zaczynać kolejne sesje od kolejki OpenProject. Przy przeglądzie
+  pierwszym „Nowy” był kiosk offline; cztery pozostałe sprawy czekały na Konrada.
+  Implementacji kiosku w tej sesji nie rozpoczynano.
+- Adapter nadal wymaga wspólnego `~/Claude/OpenProject/op.py` i jego lokalnego pliku
+  `claude.token` przy imporcie, ale każde żądanie wysyła z tokenem Codex.
+
 ## Sesja 2026-10-26
 ### Zrobiono
 - Nowy projekt `~/Claude/Grafik` jako darmowe narzędzie na wzór HotelAgenda: szkielet (Django 6.1 + DRF, React 19 + Vite,
@@ -69,3 +90,13 @@
 ### Nie zadziałało (demo)
 - `ssh host 'bash -s' <<EOF` z `deploy.sh` w środku: `docker compose exec -T` zjadł resztę skryptu — seed się nie wykonał, bez błędu.
 - Bramka EN skanowała stałą listę plików — nowy `grafik/demo.py` by się prześlizgnął; dopisany do listy (lista jest w teście).
+
+## Sesja 2026-10-28 — podlinkowanie sudomie
+### Zrobiono
+- Wdrożono stopkę publicznych stron z wygenerowanej listy frontend/src/site/sudomie.ts, PL/EN i link katalogu w bieżącym języku. Poprawiono min-width figury z tabelą demo na telefonie.
+### Zadziałało
+- Build, time.check, i18n.check (388), smoke 10/10, produkcja PL/EN 390/1440 px OK.
+### Nie zadziałało / ograniczenia
+- Stary obraz działającego web nie był dostępny do tagowania; zachowano jego /srv i Caddyfile, następnie wdrożono nowy frontend.
+### Następne kroki
+- Podlinkowanie Grafiku ukończone. Kolejka dalszej pracy pozostaje w OpenProject; temat kiosku offline nie był realizowany. Zadanie źródłowe: [473](https://projekty.sudomie.pl/work_packages/473).

@@ -1,6 +1,7 @@
 // English for the panel, the public site and the NFC pages. Key = the Polish text exactly as in t("…").
 // Same {params} on both sides; checked by i18n.check.ts (npm run check).
 export const EN: Record<string, string> = {
+  "Narzędzia sudomie": "sudomie tools",
   "(NTAG213/215, kilka złotych) z linkiem punktu: pracownik przykłada swój telefon, jest zalogowany — odbicie.": "(NTAG213/215, costs very little) with the point's link: the employee holds their logged-in phone to it — punch.",
   "A gdy ktoś zapomni karty?": "What if someone forgets their card?",
   "Akceptuję": "I accept the",
