@@ -1,0 +1,42 @@
+{
+ servers {
+  trusted_proxies static {$TRUSTED_PROXY_CIDRS:127.0.0.1/32}
+  trusted_proxies_strict
+ }
+}
+{$SITE_ADDRESS:localhost} {
+ @public_http {
+  host {$PUBLIC_HOSTS:localhost.invalid}
+  header X-Forwarded-Proto http
+ }
+ redir @public_http https://{host}{uri} 308
+ encode zstd gzip
+ # Uploads: logos up to 2 MB, hotel slides up to 5 MB (checked again in Django); the rest stays small.
+ @upload path /api/hotels/*/logo/ /api/hotels/*/groups/*/organizer-logo/ /api/hotels/*/slides/
+ request_body @upload {
+  max_size 6MB
+ }
+ @small not path /api/hotels/*/logo/ /api/hotels/*/groups/*/organizer-logo/ /api/hotels/*/slides/
+ request_body @small {
+  max_size 512KB
+ }
+ @backend path /api/* /admin /admin/* /static/*
+ handle @backend {
+  reverse_proxy api:8000 {
+   header_up X-Forwarded-For {client_ip}
+  }
+ }
+ handle {
+  root * /srv
+  # SPA: /, /rejestracja, /regulamin, /ekran/<token>, /g/<token>, /o/<token>, /panel/* all load index.html
+  # (GA4 is allowed in the CSP but loaded only by the public pages, after Consent Mode defaults)
+  try_files {path} /index.html
+  file_server
+ }
+ header {
+  X-Content-Type-Options nosniff
+  Referrer-Policy no-referrer
+  X-Frame-Options DENY
+  Content-Security-Policy "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.googletagmanager.com https://*.google-analytics.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+ }
+}

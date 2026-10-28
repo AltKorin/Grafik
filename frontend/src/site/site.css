@@ -1,0 +1,121 @@
+/* Public pages — the panel's palette (Słownik Kolorów 202 + akcent 033, see panel.css),
+   so the landing looks like the tool it advertises. Sienna only for accents. */
+.site {
+  --paper: #eef4f1;
+  --sheet: #fbfdfc;
+  --ink: #2b2d33;
+  --ink-soft: #565d66;
+  --line: #d3e1da;
+  --line-strong: #adc3b9;
+  --russet: #b4501a;
+  --russet-soft: #f8e4d6;
+  --ocher: #2f8a68;
+  --ocher-soft: #d3ece1;
+  --danger: #a3261b;
+  --ui: "Instrument Sans", system-ui, sans-serif;
+  --serif: "Instrument Sans", system-ui, sans-serif;
+
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 17px/1.55 var(--ui);
+}
+.site *, .site *::before, .site *::after { box-sizing: border-box; }
+.site :focus-visible { outline: 3px solid var(--ocher); outline-offset: 2px; }
+.site h1, .site h2, .site h3 { font-family: var(--serif); font-weight: 700; letter-spacing: 0; text-transform: none; line-height: 1.15; }
+.site a { color: var(--ink); }
+.btn.big { padding: 14px 22px; font-size: 17px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.site-top {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px clamp(16px, 4vw, 48px);
+  border-bottom: 1px solid var(--line);
+}
+.site-brand { font: 700 22px/1 var(--serif); text-decoration: none; margin-right: auto; }
+.site-top nav { display: flex; align-items: center; gap: 16px; white-space: nowrap; }
+.site-top nav a:not(.btn) { text-decoration: none; font-weight: 600; }
+
+.site-notice { margin: 16px auto 0; max-width: 1180px; padding: 12px 16px; background: var(--ocher-soft); border-radius: 8px; }
+
+.hero { padding: clamp(32px, 7vw, 88px) clamp(16px, 4vw, 48px) 24px; }
+.hero-text { max-width: 860px; margin: 0 auto; text-align: center; }
+.kicker { margin: 0 0 12px; color: var(--russet); font-weight: 600; font-size: 15px; }
+.hero h1 { margin: 0; font-size: clamp(32px, 5vw, 56px); }
+.lead { color: var(--ink-soft); font-size: 19px; max-width: 60ch; margin: 18px auto 0; }
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 28px 0 0; }
+
+.demo { padding: 24px clamp(16px, 4vw, 48px) 48px; }
+.demo-stage {
+  max-width: 1180px; margin: 0 auto;
+  display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 32px; align-items: end;
+}
+.demo figure { margin: 0; }
+.demo figcaption { margin-top: 10px; font-size: 14px; color: var(--ink-soft); text-align: center; }
+.phone-screen {
+  height: 420px; border: 10px solid #1b1f24; border-radius: 34px; background: var(--sheet);
+  box-shadow: 0 30px 60px -30px rgba(20, 30, 50, 0.6);
+}
+.tap-demo { display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; padding: 16px; }
+.tap-demo .tap-mark { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: var(--ocher); color: #fff; font: 700 40px/1 var(--ui); }
+.tap-demo strong { font-size: 30px; font-variant-numeric: tabular-nums; }
+.tap-demo span:last-child { color: var(--ink-soft); font-size: 15px; }
+.sheet-demo .grid-wrap { box-shadow: 0 30px 60px -30px rgba(20, 30, 50, 0.45); }
+@media (max-width: 860px) { .demo-stage { grid-template-columns: 1fr; } .phone { max-width: 260px; margin: 0 auto !important; } }
+
+.steps, .faq { max-width: 1180px; margin: 0 auto; padding: 48px clamp(16px, 4vw, 48px); }
+.steps h2, .faq h2 { font-size: 34px; margin: 0 0 24px; }
+.steps ol { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.steps li { counter-increment: step; padding: 24px; background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; }
+.steps li::before { content: counter(step); display: block; font: 400 36px/1 var(--serif); color: var(--russet); }
+.steps h3 { font-size: 22px; margin: 12px 0 8px; }
+.steps p { margin: 0; color: var(--ink-soft); }
+.faq dl { margin: 0; display: grid; gap: 4px 32px; grid-template-columns: minmax(200px, 1fr) 2fr; }
+.faq dt { font-weight: 650; padding-top: 14px; border-top: 1px solid var(--line); }
+.faq dd { margin: 0; padding: 14px 0; border-top: 1px solid var(--line); color: var(--ink-soft); }
+.faq .hero-actions { justify-content: flex-start; }
+
+.site-narrow { max-width: 620px; margin: 0 auto; padding: 40px 16px 64px; }
+.site-narrow h1 { font-size: 38px; margin: 0; }
+.site-narrow .lead { margin-left: 0; }
+.site-form { display: grid; gap: 16px; margin-top: 28px; padding: 24px; background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; }
+.site-form .field { display: grid; gap: 6px; }
+.site-form label { font-weight: 600; }
+.site-form input[type="text"], .site-form input[type="email"], .site-form input[type="password"] {
+  font: inherit; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink);
+}
+.site-form small, .site-form .hint { color: var(--ink-soft); font-size: 14px; }
+.site-form .check { align-items: flex-start; font-weight: 400; }
+.site-form .check input { margin-top: 4px; flex: none; }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+.terms h2 { font-size: 22px; margin: 32px 0 8px; }
+.terms li { margin: 6px 0; }
+.terms .updated { color: var(--ink-soft); }
+
+.site-foot { border-top: 1px solid var(--line); padding: 28px clamp(16px, 4vw, 48px) 96px; font-size: 14px; color: var(--ink-soft); }
+.site-foot p { max-width: 1180px; margin: 0 auto 8px; }
+.site-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.site .link { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; cursor: pointer; }
+
+.cc-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px;
+  padding: 14px 16px; background: var(--ink); color: #f5f0e6; font-size: 15px;
+}
+.cc-bar p { margin: 0; max-width: 70ch; }
+.cc-bar a { color: #f5f0e6; }
+.cc-bar span { display: flex; gap: 8px; }
+
+@media (max-width: 860px) {
+  .demo-stage { grid-template-columns: 1fr; }
+  .phone { max-width: 300px; margin: 0 auto; width: 100%; }
+  .steps ol { grid-template-columns: 1fr; }
+  .faq dl { grid-template-columns: 1fr; }
+  .faq dd { border-top: 0; padding-top: 0; }
+}
+@media (max-width: 480px) {
+  .site-top { gap: 8px; }
+  .site-top nav { gap: 10px; font-size: 15px; }
+  .site-brand { font-size: 18px; }
+}

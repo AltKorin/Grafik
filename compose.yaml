@@ -1,0 +1,62 @@
+name: grafik
+x-backend: &backend
+  build: ./backend
+  env_file: .env
+  environment:
+    POSTGRES_HOST: db
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs: [/tmp]
+services:
+  db:
+    image: postgres:17-alpine
+    env_file: .env
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 1g
+  migrate:
+    <<: *backend
+    restart: 'no'
+    command: [sh, -c, 'python manage.py migrate --noinput && python manage.py createcachetable']
+    depends_on:
+      db: {condition: service_healthy}
+  api:
+    <<: *backend
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    mem_limit: 512m
+    cpus: 2
+  web:
+    build: ./frontend
+    env_file: .env
+    ports: ['${HTTP_PORT:-8080}:80', '${HTTPS_PORT:-8443}:443']
+    depends_on:
+      api: {condition: service_healthy}
+    volumes: [caddy_data:/data, caddy_config:/config]
+    restart: unless-stopped
+    mem_limit: 128m
+  # Cloudflare Tunnel (production): `docker compose --profile tunnel up -d` (deploy.sh does it when
+  # deploy/cloudflared/config.yml exists). Created from the terminal like brgollnau: see deploy/PROXMOX-HP.md.
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    profiles: [tunnel]
+    command: [tunnel, --no-autoupdate, --config, /etc/cloudflared/config.yml, run]
+    volumes: [./deploy/cloudflared:/etc/cloudflared:ro]
+    depends_on: [web]
+    restart: unless-stopped
+    mem_limit: 128m
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

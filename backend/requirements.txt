@@ -1,0 +1,7 @@
+Django>=6.1,<6.2
+djangorestframework>=3.18,<3.19
+django-jazzmin>=3.0,<4
+django-simple-history>=3.13,<4
+whitenoise>=6.12,<7
+psycopg[binary]>=3.3,<3.4
+uvicorn>=0.54,<0.55

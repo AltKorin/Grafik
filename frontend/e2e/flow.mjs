@@ -1,0 +1,183 @@
+// E2E on the seeded demo (backend: `manage.py seed_demo --reset > ../.seed-links.txt`).
+// Usage: CHROME=<chromium> BASE=http://127.0.0.1:5180 npm run e2e   — screenshots in e2e/shots/.
+// Changes demo data (a shift, a person, punches, a request) → reseed afterwards.
+import { readFileSync, mkdirSync } from "node:fs";
+import { chromium } from "playwright-core";
+
+const BASE = process.env.BASE ?? "http://127.0.0.1:5180";
+const PASSWORD = process.env.DEMO_PASSWORD ?? "demo-haslo-do-testow";
+const links = readFileSync(new URL("../../.seed-links.txt", import.meta.url), "utf8");
+const tag = links.match(/Naklejka NFC: (\S+)/)[1];
+const kiosk = links.match(/Kiosk:\s+(\S+)/)[1];
+mkdirSync(new URL("./shots/", import.meta.url), { recursive: true });
+const shot = (page, name) => page.screenshot({ path: new URL(`./shots/${name}.png`, import.meta.url).pathname, fullPage: true });
+
+let failures = 0;
+async function step(name, fn) {
+  try {
+    await fn();
+    console.log(`OK    ${name}`);
+  } catch (error) {
+    failures++;
+    console.log(`BŁĄD  ${name}: ${error.message.split("\n")[0]}`);
+  }
+}
+const expectText = async (page, text, timeout = 5000) => page.getByText(text, { exact: false }).first().waitFor({ timeout });
+
+async function login(page, user) {
+  await page.getByLabel("Login lub e-mail").fill(user);
+  await page.getByLabel("Hasło").fill(PASSWORD);
+  await page.getByRole("button", { name: "Zaloguj się" }).click();
+}
+
+const browser = await chromium.launch({ executablePath: process.env.CHROME, headless: true });
+const desk = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+const errors = [];
+desk.on("pageerror", (e) => errors.push(e.message));
+
+await step("landing i rejestracja się otwierają", async () => {
+  await desk.goto(BASE);
+  await expectText(desk, "Grafik pracy i czas pracy przez NFC");
+  await shot(desk, "01-landing");
+  await desk.goto(`${BASE}/rejestracja`);
+  await desk.getByLabel("Nazwa firmy").waitFor();
+});
+
+await step("dyrektor: pulpit Dziś z obecnością", async () => {
+  await desk.goto(`${BASE}/panel`);
+  await login(desk, "dyrektor-demo");
+  await expectText(desk, "W pracy teraz");
+  await shot(desk, "02-dzis-dyrektor");
+});
+
+await step("grafik: dodanie zmiany przez + i widoczny urlop", async () => {
+  await desk.getByRole("link", { name: "Grafik" }).click();
+  await expectText(desk, "Anna Nowak");
+  await desk.getByRole("button", { name: "Następny tydzień" }).click(); // next week: Tomek's holiday
+  await expectText(desk, "Urlop");
+  const add = desk.getByRole("button", { name: /Dodaj zmianę: Dorota Dyrektor/ }).first();
+  await add.click();
+  const dialog = desk.getByRole("dialog");
+  await dialog.getByLabel("Od", { exact: true }).fill("07:30");
+  await dialog.getByLabel("Do", { exact: true }).fill("15:30");
+  await dialog.getByLabel("Uwagi").fill("E2E");
+  await dialog.getByRole("button", { name: "Dodaj zmianę" }).click();
+  await desk.locator("table.week .chip", { hasText: "07:30–15:30" }).waitFor({ timeout: 5000 }); // in the grid, not the toast
+  await shot(desk, "03-grafik");
+});
+
+await step("grafik: zmiana na dzień urlopu jest zablokowana", async () => {
+  const row = desk.getByRole("row", { name: /Tomasz/ });
+  const away = row.getByRole("button", { name: "Urlop" }).first();
+  await away.waitFor();
+  const cellAdd = row.getByRole("button", { name: /Dodaj zmianę/ });
+  // the first "+" in a cell that shows Urlop
+  const count = await cellAdd.count();
+  for (let i = 0; i < count; i++) {
+    const cell = cellAdd.nth(i).locator("..");
+    if (await cell.getByText("Urlop").count()) {
+      await cellAdd.nth(i).click();
+      break;
+    }
+  }
+  await desk.getByRole("dialog").getByRole("button", { name: "Dodaj zmianę" }).click();
+  await expectText(desk, "poproś o wycofanie zgłoszenia");
+  await desk.getByRole("dialog").getByRole("button", { name: "Anuluj" }).click();
+});
+
+let newPassword = "";
+await step("zespół: nowy pracownik z loginem, hasło pokazane raz", async () => {
+  await desk.getByRole("link", { name: "Zespół i NFC" }).click();
+  await desk.getByRole("button", { name: "Dodaj pracownika" }).click();
+  await desk.getByLabel("Imię i nazwisko").fill("Ewa E2E");
+  await desk.getByLabel("Login (opcjonalnie)").fill(`ewa.e2e${Date.now() % 100000}`);
+  await desk.getByRole("button", { name: "Dodaj", exact: true }).click();
+  await expectText(desk, "przekaż je teraz");
+  newPassword = await desk.locator(".notice.secret strong").nth(2).innerText();
+  if (newPassword.length < 12) throw new Error(`hasło: ${newPassword}`);
+  await shot(desk, "04-zespol");
+});
+
+const phone = await browser.newContext({ viewport: { width: 390, height: 800 }, isMobile: true });
+const tapPage = await phone.newPage();
+await step("telefon przy naklejce: logowanie, potem odbicie", async () => {
+  await tapPage.goto(`${BASE}${tag}`);
+  await expectText(tapPage, "zaloguj się raz na tym telefonie");
+  await login(tapPage, "anna");
+  await tapPage.waitForURL("**/panel", { timeout: 5000 }); // replaced after the punch: a restored tab must not punch again
+  await tapPage.getByRole("heading", { name: /^(Wejście|Wyjście) \d\d:\d\d$/ }).waitFor();
+  await shot(tapPage, "05-telefon-odbicie");
+});
+
+await step("telefon: drugie przyłożenie w ciągu minuty nie liczy się drugi raz", async () => {
+  await tapPage.goto(`${BASE}${tag}`);
+  await expectText(tapPage, "nie liczymy go drugi raz");
+});
+
+const tablet = await browser.newPage({ viewport: { width: 1180, height: 820 } });
+await step("kiosk: karta z separatorami odbija, nieznana karta nie", async () => {
+  await tablet.goto(`${BASE}${kiosk}`);
+  await expectText(tablet, "Przyłóż kartę");
+  await tablet.keyboard.type("04:77:aa:11");
+  await tablet.keyboard.press("Enter");
+  await expectText(tablet, "Aleksandra Lewandowska");
+  await shot(tablet, "06-kiosk-ok");
+  await tablet.waitForTimeout(4200);
+  await tablet.keyboard.type("CAFEBABE");
+  await tablet.keyboard.press("Enter");
+  await expectText(tablet, "Nieznana karta");
+  await shot(tablet, "07-kiosk-nieznana");
+});
+
+await step("zespół: nieznana karta z kiosku do przypisania", async () => {
+  await desk.reload();
+  const row = desk.locator(".settings-list li", { hasText: "Ewa E2E" });
+  await row.getByRole("button", { name: "Zmień" }).click();
+  await expectText(desk, "…BABE");
+  await desk.getByRole("button", { name: "Przypisz" }).first().click();
+  await expectText(desk, "Karta przypisana");
+  await desk.keyboard.press("Escape");
+});
+
+await step("wniosek pracownika i akceptacja kierownika zmienia grafik", async () => {
+  const anna = await phone.newPage();
+  await anna.goto(`${BASE}/panel/wnioski`);
+  await anna.getByRole("button", { name: "Nowy wniosek" }).click();
+  await anna.getByText("Odwołanie", { exact: true }).click();
+  const select = anna.getByLabel("Moja zmiana");
+  await select.locator("option").nth(1).waitFor({ state: "attached" });
+  const options = await select.locator("option").allInnerTexts();
+  if (options.length < 2) throw new Error("brak zmian do wyboru");
+  await select.selectOption({ index: options.length - 1 });
+  await anna.getByLabel("Powód").fill("E2E: wizyta u lekarza");
+  await anna.getByRole("button", { name: "Wyślij wniosek" }).click();
+  await expectText(anna, "Wniosek wysłany");
+  const boss = await browser.newPage();
+  await boss.goto(`${BASE}/panel`);
+  await login(boss, "kuchnia-kier");
+  await expectText(boss, "Wnioski do rozpatrzenia");
+  await boss.getByRole("link", { name: "Wnioski" }).click();
+  await boss.getByRole("button", { name: "Przyjmij" }).first().click();
+  await boss.getByRole("dialog").getByRole("button", { name: "Przyjmij" }).click();
+  await expectText(boss, "grafik już zmieniony");
+  await shot(boss, "08-wnioski");
+});
+
+await step("czas pracy: zestawienie, szczegóły osoby, CSV", async () => {
+  await desk.getByRole("link", { name: "Czas pracy" }).click();
+  await expectText(desk, "Przepracowane");
+  await desk.getByRole("row", { name: /Anna Nowak/ }).click();
+  await expectText(desk, "Karta w kiosku"); // the raw punches, not only the heading
+  await shot(desk, "09-czas-pracy");
+  const href = await desk.getByRole("link", { name: "Pobierz CSV" }).getAttribute("href");
+  const csv = await desk.evaluate(async (u) => (await fetch(u)).text(), href);
+  if (!csv.includes("Pracownik;Dział;Plan")) throw new Error("CSV bez nagłówka");
+});
+
+await step("brak błędów JS na stronach", async () => {
+  if (errors.length) throw new Error(errors.join(" | "));
+});
+
+await browser.close();
+console.log(failures ? `\nBłędów: ${failures}` : "\nWszystko OK.");
+process.exit(failures ? 1 : 0);

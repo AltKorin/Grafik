@@ -1,0 +1,22 @@
+.tap { min-height: 100%; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px; text-align: center; }
+.tap h1 { margin: 0; font: 700 clamp(32px, 9vw, 56px)/1.1 var(--ui); font-variant-numeric: tabular-nums; }
+.tap p { margin: 0; font-size: 18px; color: var(--ink-soft); max-width: 36ch; }
+.tap-mark { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 50%; background: var(--ink); color: #fff !important; font: 700 56px/1 var(--ui); }
+.tap.in .tap-mark { background: var(--ocher); }
+.tap.out .tap-mark { background: var(--ink); }
+.tap-mark.bad { background: var(--russet); }
+
+/* kiosk: a tablet at the entrance, read from a metre away */
+.kiosk { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; padding: clamp(16px, 4vw, 40px); gap: 16px; background: var(--ink); color: #eef4f1; }
+.kiosk header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 20px; }
+.kiosk .clock { font: 700 clamp(40px, 8vw, 72px)/1 var(--ui); font-variant-numeric: tabular-nums; }
+.kiosk .stage { display: grid; place-content: center; justify-items: center; gap: 18px; text-align: center; border-radius: 24px; }
+.kiosk .stage h1 { margin: 0; font: 700 clamp(36px, 7vw, 72px)/1.1 var(--ui); }
+.kiosk .stage p { margin: 0; font-size: clamp(18px, 3vw, 28px); }
+.kiosk .stage.in { background: var(--ocher); }
+.kiosk .stage.out { background: #3c4048; }
+.kiosk .stage.bad { background: var(--russet); }
+.kiosk .card-icon { width: 140px; height: 92px; border: 4px solid currentColor; border-radius: 14px; opacity: 0.5; }
+.kiosk footer { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; font-size: 14px; opacity: 0.8; }
+.kiosk .catcher { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.kiosk .btn { background: transparent; color: inherit; border-color: rgba(255, 255, 255, 0.35); }
