@@ -40,3 +40,8 @@ stosie Docker. **Nie wdrożone.** Kolejka prac: OpenProject, projekt `grafik`.
 2. Sekcja `#grafik` w polityce prywatności sudomie.pl (link w stopce i regulaminie już na nią wskazuje).
 3. Przegląd regulaminu (`backend/grafik/data/regulamin.html`, § 2 ust. 2 o ewidencji czasu pracy, § 8 powierzenie).
 4. Test na prawdziwych naklejkach NTAG213 i czytniku USB.
+
+## Repo
+- https://github.com/AltKorin/Grafik (publiczne, MIT), gałąź `main`. Commit/push tylko na prośbę usera.
+
+

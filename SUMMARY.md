@@ -19,4 +19,5 @@
 - Zatwierdzenie wniosku „odwołanie” wywalało zapis (wniosek trzymał w pamięci usuniętą zmianę) — poprawione.
 - Kod Shift_Manager z GitHuba nie nadawał się do przeniesienia (`Shift.save()` wcięte poza klasą — scalanie i historia martwe); wzięte tylko wymagania.
 ### Następne kroki
+- 2026-10-28: repo wypchnięte jako publiczne AltKorin/Grafik (#428 zamknięte).
 - Zostało niewdrożone: produkcja na proxmox-hp, polityka prywatności `#grafik`, przegląd regulaminu, test na prawdziwych naklejkach i czytniku — zadania w OpenProject (`grafik`).
