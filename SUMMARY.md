@@ -40,8 +40,8 @@
 - Po wdrożeniu: „Załóż firmę” dla zalogowanego konta (pusty panel nie jest już ślepą uliczką) — wdrożone, commit a124892.
 - Wersja angielska całości (PL/EN): panel, strona, rejestracja, regulamin (tłumaczenie, wiąże PL), kiosk, naklejka,
   komunikaty API, etykiety, CSV. Wzorzec z Narrative Framework (polski tekst = klucz). Bramki: `i18n.check` (front),
-  `EnglishTests` (backend, skan AST), E2E krok EN (szuka polskich liter na każdej stronie). Lokalnie zielone; **na produkcję
-  nie poszło** — wdrożenie zablokowane przez tryb uprawnień, czeka na zgodę usera.
+  `EnglishTests` (backend, skan AST), E2E krok EN (szuka polskich liter na każdej stronie). Wdrożone po zgodzie usera
+  (testy na serwerze 62/62, smoke OK, EN sprawdzone na żywo), commit acabce9.
 ### Zadziałało (EN)
 - Natywny `LocaleMiddleware` + ciasteczko `django_language` z przełącznika: link do CSV, regulamin i błędy walidatorów
   Django same wychodzą po angielsku, bez nagłówków w każdym zapytaniu.
