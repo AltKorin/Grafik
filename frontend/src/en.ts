@@ -4,6 +4,7 @@ export const EN: Record<string, string> = {
   "Narzędzia sudomie": "sudomie tools",
   "(NTAG213/215, kilka złotych) z linkiem punktu: pracownik przykłada swój telefon, jest zalogowany — odbicie.": "(NTAG213/215, costs very little) with the point's link: the employee holds their logged-in phone to it — punch.",
   "A gdy ktoś zapomni karty?": "What if someone forgets their card?",
+  "Chcę dostawać newsletter sudomie raz w miesiącu: nowości w Grafiku i poradniki. Potwierdzę zapis linkiem z maila, wypiszę się w każdej chwili.": "Send me the sudomie newsletter once a month: what's new in Grafik and guides. I will confirm via the link in the email and can unsubscribe at any time.",
   "Akceptuję": "I accept the",
   "Aktywny (zarchiwizowany nie loguje się i nie odbija)": "Active (an archived person cannot log in or punch)",
   "Anuluj": "Cancel",

@@ -22,6 +22,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 
+from . import newsletter
 from .domain_errors import DomainError
 from .models import TermsAcceptance
 from .signals import client_ip
@@ -82,6 +83,9 @@ def register(request, data):
             user = User.objects.create_user(email, email=email, password=password)
     except IntegrityError:  # two submits of the same form at once
         raise DomainError("Konto z tym adresem już istnieje — zaloguj się", 409) from None
+    if data.get("newsletter") is True and newsletter.wlaczony():
+        # Dopiero po zatwierdzeniu transakcji: nieudana rejestracja nie zapisuje nikogo do newslettera.
+        transaction.on_commit(lambda ip=client_ip(request): newsletter.zapisz(email, ip))
     return user, found_firm(request, user, firm_name, person)
 
 

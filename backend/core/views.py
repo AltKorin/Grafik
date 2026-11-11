@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 
 from . import accounts
+from . import newsletter
 from .domain_errors import DomainError
 from .i18n import error_body, is_english, tr
 
@@ -119,4 +120,4 @@ def terms(request):
 @permission_classes([AllowAny])
 def public_config(request):
     # Empty id = no analytics tag at all (CLAUDE.md: feature flag, switched on per deployment).
-    return Response({"ga_measurement_id": settings.GA_MEASUREMENT_ID, "demo": settings.DEMO_MAX > 0})
+    return Response({"ga_measurement_id": settings.GA_MEASUREMENT_ID, "demo": settings.DEMO_MAX > 0, "newsletter": newsletter.wlaczony()})

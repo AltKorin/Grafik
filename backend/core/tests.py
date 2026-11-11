@@ -202,7 +202,7 @@ class RegistrationTests(TestCase):
         terms = anonymous.get("/api/terms/").json()
         self.assertIn("Usługodawca", terms["html"])
         self.assertRegex(terms["version"], r"^\d{4}-\d{2}-\d{2}$")
-        self.assertEqual(anonymous.get("/api/public-config/").json(), {"ga_measurement_id": "", "demo": False})
+        self.assertEqual(anonymous.get("/api/public-config/").json(), {"ga_measurement_id": "", "demo": False, "newsletter": False})
 
 
 class PasswordChangeTests(TestCase):
@@ -329,3 +329,80 @@ class EnglishTests(TestCase):
             self.assertEqual(tr("Tekst bez tłumaczenia"), "Tekst bez tłumaczenia")
         with translation.override("pl"):
             self.assertEqual(str(DomainError("Pole „{label}” jest wymagane", label="uwagi")), "Pole „uwagi” jest wymagane")
+
+
+import json  # noqa: E402
+
+REJESTRACJA = {"email": "Nowa@Firma.PL", "password": PASSWORD, "firm": "Bistro Newsletter", "name": "Ola Nowa", "accept": True}
+
+
+class NewsletterTests(TestCase):
+    """Pole przy rejestracji: domyślnie wyłączone, zapis dopiero po udanej rejestracji, błąd sieci jej nie psuje."""
+
+    def setUp(self):
+        cache.clear()
+        self.client = APIClient()
+        self.csrf = self.client.get("/api/session/").json()["csrf"]
+
+    def register(self, **fields):
+        body = {**REJESTRACJA, **fields}
+        return self.client.post("/api/register/", body, format="json", HTTP_X_CSRFTOKEN=self.csrf, HTTP_X_FORWARDED_FOR="203.0.113.9")
+
+    def run_register(self, wywolania, **fields):
+        from unittest import mock
+        with mock.patch("core.newsletter.zapisz", side_effect=lambda e, ip: wywolania.append((e, ip))):
+            with self.captureOnCommitCallbacks(execute=True):
+                return self.register(**fields)
+
+    @override_settings(NEWSLETTER_KLUCZ="k")
+    def test_zaznaczone_pole_zapisuje_po_rejestracji_z_ip_uzytkownika(self):
+        wywolania = []
+        self.assertEqual(self.run_register(wywolania, newsletter=True).status_code, 201)
+        self.assertEqual(wywolania, [(REJESTRACJA["email"].lower(), "203.0.113.9")])
+
+    @override_settings(NEWSLETTER_KLUCZ="k")
+    def test_niezaznaczone_albo_nie_bool_nic_nie_wysyla(self):
+        for wartosc in (False, "true", 1, None, "on"):
+            wywolania = []
+            get_user_model().objects.all().delete()
+            cache.clear()
+            self.run_register(wywolania, newsletter=wartosc)
+            self.assertEqual(wywolania, [], wartosc)
+
+    def test_bez_klucza_nic_nie_wysyla_i_flaga_wylaczona(self):
+        wywolania = []
+        self.run_register(wywolania, newsletter=True)
+        self.assertEqual(wywolania, [])
+        self.assertFalse(APIClient().get("/api/public-config/").json()["newsletter"])
+
+    @override_settings(NEWSLETTER_KLUCZ="k")
+    def test_flaga_wlaczona_z_kluczem(self):
+        self.assertTrue(APIClient().get("/api/public-config/").json()["newsletter"])
+
+    @override_settings(NEWSLETTER_KLUCZ="k")
+    def test_nieudana_rejestracja_nie_zapisuje(self):
+        wywolania = []
+        self.assertEqual(self.run_register(wywolania, newsletter=True, accept=False).status_code, 400)
+        self.assertEqual(wywolania, [])
+
+    @override_settings(NEWSLETTER_KLUCZ="k", NEWSLETTER_URL="http://127.0.0.1:9/newsletter", NEWSLETTER_TIMEOUT=1)
+    def test_blad_sieci_nie_psuje_rejestracji(self):
+        from . import newsletter
+        with self.assertLogs("core.newsletter", level="ERROR"):
+            self.assertFalse(newsletter.zapisz("a@b.pl", "1.2.3.4"))
+        with self.assertLogs("core.newsletter", level="ERROR"):
+            with self.captureOnCommitCallbacks(execute=True):
+                self.assertEqual(self.register(newsletter=True).status_code, 201)
+
+    @override_settings(NEWSLETTER_KLUCZ="tajny", NEWSLETTER_URL="https://sudomie.pl/chat-api/newsletter")
+    def test_zapytanie_do_sudomie_ma_klucz_email_i_ip(self):
+        from unittest import mock
+        from . import newsletter
+        odpowiedz = mock.MagicMock(status=200)
+        odpowiedz.__enter__.return_value = odpowiedz
+        with mock.patch("urllib.request.urlopen", return_value=odpowiedz) as urlopen:
+            self.assertTrue(newsletter.zapisz("ola@firma.pl", "83.1.2.3"))
+        req = urlopen.call_args.args[0]
+        self.assertEqual(req.full_url, "https://sudomie.pl/chat-api/newsletter")
+        self.assertEqual(req.get_header("X-newsletter-klucz"), "tajny")
+        self.assertEqual(json.loads(req.data), {"email": "ola@firma.pl", "ip": "83.1.2.3"})

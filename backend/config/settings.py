@@ -168,3 +168,8 @@ JAZZMIN_SETTINGS = {
     "site_brand": "Grafik",
     "welcome_sign": "Panel serwisowy",
 }
+
+# Newsletter sudomie: pusty klucz = funkcja wyłączona (flaga). Klucz per aplikacja, nadany w sudomie.pl.
+NEWSLETTER_URL = os.environ.get("NEWSLETTER_URL", "https://sudomie.pl/chat-api/newsletter")
+NEWSLETTER_KLUCZ = os.environ.get("NEWSLETTER_KLUCZ", "")
+NEWSLETTER_TIMEOUT = float(os.environ.get("NEWSLETTER_TIMEOUT", "5"))

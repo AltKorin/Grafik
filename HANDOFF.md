@@ -3,6 +3,16 @@
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
+## Newsletter sudomie przy rejestracji (2026-11-11, KOD GOTOWY, NIEZACOMMITOWANE, NIEWDROŻONE)
+- Pole „Chcę dostawać newsletter sudomie” przy rejestracji, domyślnie niezaznaczone. Kod: `backend/core/newsletter.py`, pole w `frontend/src/site/Site.tsx` (PL/EN), flaga `newsletter` w `/api/public-config/`.
+- **Flaga:** bez `NEWSLETTER_KLUCZ` w `.env` pola nie ma i nic nie wychodzi. Z kluczem: po zatwierdzeniu rejestracji
+  `POST https://sudomie.pl/chat-api/newsletter` (e-mail + IP użytkownika, nagłówek `X-Newsletter-Klucz`); sudomie.pl wysyła link
+  potwierdzający i trzyma dowód zgody. Błąd sieci = wpis w logu, rejestracja przechodzi. Tu nic nie zapisujemy w bazie.
+- **Wdrożenie:** (1) najpierw `bash ~/Claude/sudomie.pl/scripts/wdroz-klucze-newslettera.sh`; (2) zwykły deploy tej aplikacji;
+  (3) do `.env` produkcji dwie linie z `~/.config/sudomie/newsletter-env-dla-aplikacji.txt` (sekcja tej aplikacji) i restart;
+  (4) próba: rejestracja z zaznaczonym polem na własny adres → mail „Potwierdź zapis do newslettera sudomie”.
+- Testy: `manage.py test core` 31 OK (7 nowych). Uwaga: `grafik.tests.SandboxDemoTests.test_expired_sandbox_disappears_with_its_accounts` pada także bez tych zmian.
+
 ## Dokumenty
 - `docs/codex-workflow.md` — procedura pracy Codex i przygotowana ścieżka zadania kiosku offline.
 - Dostęp Codex do OpenProject: konto `codex` (ID 7), token `~/.config/openproject/codex.token` (600).

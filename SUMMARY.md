@@ -100,3 +100,13 @@
 - Stary obraz działającego web nie był dostępny do tagowania; zachowano jego /srv i Caddyfile, następnie wdrożono nowy frontend.
 ### Następne kroki
 - Podlinkowanie Grafiku ukończone. Kolejka dalszej pracy pozostaje w OpenProject; temat kiosku offline nie był realizowany. Zadanie źródłowe: [473](https://projekty.sudomie.pl/work_packages/473).
+
+## Sesja 2026-11-11: newsletter sudomie przy rejestracji
+### Zrobiono
+- Pole newslettera przy rejestracji za flagą `NEWSLETTER_KLUCZ` (`backend/core/newsletter.py`, pole w `frontend/src/site/Site.tsx` (PL/EN), flaga `newsletter` w `/api/public-config/`); zapis przez sudomie.pl z kluczem aplikacji.
+### Zadziałało
+- `transaction.on_commit` + `captureOnCommitCallbacks` w testach: nieudana rejestracja nie zapisuje nikogo.
+### Nie zadziałało
+- Wdrożenie: agent nie ma dostępu do produkcji; robi Konrad.
+### Następne kroki
+- Commit, deploy, klucz w `.env`, próba na własnym adresie. Testy: `manage.py test core` 31 OK (7 nowych). Uwaga: `grafik.tests.SandboxDemoTests.test_expired_sandbox_disappears_with_its_accounts` pada także bez tych zmian.
