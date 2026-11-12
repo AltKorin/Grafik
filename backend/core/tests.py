@@ -197,6 +197,7 @@ class RegistrationTests(TestCase):
         self.assertEqual(self.register(email="r9@hotel.pl").status_code, 429)
 
     @override_settings(DEMO_MAX=0)  # the server .env switches the demo on; this test is about the defaults
+    @override_settings(NEWSLETTER_KLUCZ="")
     def test_terms_and_public_config_are_public(self):
         anonymous = APIClient()
         terms = anonymous.get("/api/terms/").json()
@@ -369,6 +370,7 @@ class NewsletterTests(TestCase):
             self.run_register(wywolania, newsletter=wartosc)
             self.assertEqual(wywolania, [], wartosc)
 
+    @override_settings(NEWSLETTER_KLUCZ="")  # niezależnie od .env serwera, gdzie klucz już jest
     def test_bez_klucza_nic_nie_wysyla_i_flaga_wylaczona(self):
         wywolania = []
         self.run_register(wywolania, newsletter=True)
