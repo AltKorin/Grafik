@@ -3,7 +3,7 @@
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
-## Newsletter sudomie przy rejestracji (2026-11-11, KOD GOTOWY, NIEZACOMMITOWANE, NIEWDROŻONE)
+## Newsletter sudomie przy rejestracji (WDROŻONE 2026-11-12, gałąź newsletter-sudomie, czeka na merge)
 - Pole „Chcę dostawać newsletter sudomie” przy rejestracji, domyślnie niezaznaczone. Kod: `backend/core/newsletter.py`, pole w `frontend/src/site/Site.tsx` (PL/EN), flaga `newsletter` w `/api/public-config/`.
 - **Flaga:** bez `NEWSLETTER_KLUCZ` w `.env` pola nie ma i nic nie wychodzi. Z kluczem: po zatwierdzeniu rejestracji
   `POST https://sudomie.pl/chat-api/newsletter` (e-mail + IP użytkownika, nagłówek `X-Newsletter-Klucz`); sudomie.pl wysyła link
