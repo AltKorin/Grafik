@@ -407,4 +407,5 @@ class NewsletterTests(TestCase):
         req = urlopen.call_args.args[0]
         self.assertEqual(req.full_url, "https://sudomie.pl/chat-api/newsletter")
         self.assertEqual(req.get_header("X-newsletter-klucz"), "tajny")
+        self.assertTrue(req.get_header("User-agent").startswith("sudomie-newsletter/"))  # nie Python-urllib: Cloudflare 1010
         self.assertEqual(json.loads(req.data), {"email": "ola@firma.pl", "ip": "83.1.2.3"})

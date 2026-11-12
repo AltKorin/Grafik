@@ -24,7 +24,12 @@ def zapisz(email, ip):
     body = json.dumps({"email": email, "ip": ip or ""}).encode()
     req = urllib.request.Request(
         settings.NEWSLETTER_URL, data=body, method="POST",
-        headers={"Content-Type": "application/json", "X-Newsletter-Klucz": settings.NEWSLETTER_KLUCZ},
+        headers={
+            "Content-Type": "application/json",
+            "X-Newsletter-Klucz": settings.NEWSLETTER_KLUCZ,
+            # Cloudflare odrzuca domyślny „Python-urllib/…” (błąd 1010), zanim zapytanie dotrze do sudomie.pl.
+            "User-Agent": "sudomie-newsletter/1.0 (grafik)",
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=settings.NEWSLETTER_TIMEOUT) as response:
