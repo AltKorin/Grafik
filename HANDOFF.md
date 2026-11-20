@@ -3,7 +3,7 @@
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
-## Logowanie kontem sudomie (WDROŻONE 2026-11-20, commity 474adc7 + 4c3fabd na gałęzi `sso-konto`, czeka na merge, #767)
+## Logowanie kontem sudomie (WDROŻONE 2026-11-20, w `main` od 48063b6, #767)
 - Grafik jako KLIENT Konta sudomie (https://konto.sudomie.pl) przez paczkę `core_sso` (agency-platform-core 0.3.0, wheel w
   `backend/vendor/`, instalowany w Dockerfile `--no-deps`; authlib + requests w `requirements.lock`).
 - Flaga: puste `OIDC_ISSUER` = brak przycisku, `/oidc/*` → `/panel/`. Z flagą: na ekranie logowania „Zaloguj przez Konto sudomie”

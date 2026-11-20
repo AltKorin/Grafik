@@ -143,5 +143,5 @@
 - Test `core.tests…test_terms_and_public_config_are_public` padł na serwerze — czytał prawdziwe `OIDC_ISSUER` z `.env`;
   poprawka `override_settings(OIDC_ISSUER="")` (commit 4c3fabd), drugi deploy: jedyny błąd = #653.
 ### Następne kroki
-- Merge gałęzi `sso-konto` Grafiku do głównej (decyzja Konrada). Utwardzenie DOT w Koncie — #774. Seed menu Kalendarza — #773.
-- Na konto-prod został stary `/root/klient-kalendarz.env` (600, z sesji #757) — do usunięcia `shred -u`, sekret jest w `.env` Kalendarza.
+- Gałąź `sso-konto` zmergowana do `main` Grafiku (fast-forward, 20.11), lokalnie — push na GitHub osobno. Utwardzenie DOT w Koncie — #774. Seed menu Kalendarza — #773.
+- Stary `/root/klient-kalendarz.env` na konto-prod usunięty (`shred -u`, 20.11); w /root nie ma już plików .env z sekretami.
