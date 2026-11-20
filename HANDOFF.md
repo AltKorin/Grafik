@@ -3,7 +3,7 @@
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
-## Logowanie kontem sudomie (gałąź `sso-konto`, NIEWDROŻONE, 2026-11-20, OpenProject #767)
+## Logowanie kontem sudomie (WDROŻONE 2026-11-20, commity 474adc7 + 4c3fabd na gałęzi `sso-konto`, czeka na merge, #767)
 - Grafik jako KLIENT Konta sudomie (https://konto.sudomie.pl) przez paczkę `core_sso` (agency-platform-core 0.3.0, wheel w
   `backend/vendor/`, instalowany w Dockerfile `--no-deps`; authlib + requests w `requirements.lock`).
 - Flaga: puste `OIDC_ISSUER` = brak przycisku, `/oidc/*` → `/panel/`. Z flagą: na ekranie logowania „Zaloguj przez Konto sudomie”
@@ -22,7 +22,7 @@ stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias
   (2) dane klienta + `OIDC_ISSUER=https://konto.sudomie.pl/o` do `.env` grafik-prod; (3) push + `deploy/deploy.sh`;
   (4) grafik-prod: `powiaz_konto biuro@przystanekwielbark.pl 2 --firma d8c0be9a-361c-449c-8dbf-8903330cf6ec`; (5) smoke.
 
-## Przyjęcia z Kalendarza na grafiku tygodnia (gałąź `sso-konto`, NIEWDROŻONE, 2026-11-20, OpenProject #759)
+## Przyjęcia z Kalendarza na grafiku tygodnia (WDROŻONE 2026-11-20, #759)
 - Wiersz „Przyjęcia” pod nagłówkami dni w `panel/Week.tsx` („13:00 Stypa · 40 os. · wstępne”). Pole `events` w `/api/w/<firma>/week/`:
   `null` = brak sekcji (niepodłączone / Kalendarz milczy), lista = przyjęcia (pusta = brak wiersza).
 - Serwis `grafik/events.py` (prawa w docstringu, testy `grafik/test_events.py`, 11): token aplikacji z Konta (client credentials,

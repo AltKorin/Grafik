@@ -128,3 +128,20 @@
 ### Następne kroki
 - Wdrożenie: najpierw SSO (#767), potem most (kroki w HANDOFF → „Przyjęcia z Kalendarza”). Oba czekają na zgodę Konrada.
 - Commit gałęzi `sso-konto` zawiera teraz SSO + most razem.
+
+## Sesja 2026-11-20 (wieczór — wdrożenie SSO Grafiku + mostu przyjęć)
+### Zrobiono
+- Backupy przed wdrożeniem na trzech serwerach (`deploy/backups/przed-wdrozeniem-20261120-1928.*` + kopie `.env`).
+- Grafik: commit `474adc7` (SSO + most) i `4c3fabd` (test), klient OIDC i klient API z Konta pipe'em do `.env`, `powiaz_konto` Marcina,
+  `KALENDARZ_URL`. Konto: deploy z `klient_api`. Kalendarz: `API_KLIENCI` + deploy.
+- Smoke: SSO 302 do Konta; odmowa kontem serwisowym (komunikat + LoginEvent failed, konto nie powstało); grafik Marcina pokazuje
+  „Stypa 21.11, 12:00, 22 os., wstępne” z Kalendarza na żywo. #767, #758, #759 zamknięte.
+### Zadziałało
+- Liczniki przed i po (Grafik 5 firm / 24 osoby / 194 zmiany / 204 odbicia; Kalendarz 1 przyjęcie / 3 menu) — dane klienta nietknięte.
+- `rsync --dry-run --itemize-changes` przed push pokazał dokładnie oczekiwane pliki, zero kasowań.
+### Nie zadziałało
+- Test `core.tests…test_terms_and_public_config_are_public` padł na serwerze — czytał prawdziwe `OIDC_ISSUER` z `.env`;
+  poprawka `override_settings(OIDC_ISSUER="")` (commit 4c3fabd), drugi deploy: jedyny błąd = #653.
+### Następne kroki
+- Merge gałęzi `sso-konto` Grafiku do głównej (decyzja Konrada). Utwardzenie DOT w Koncie — #774. Seed menu Kalendarza — #773.
+- Na konto-prod został stary `/root/klient-kalendarz.env` (600, z sesji #757) — do usunięcia `shred -u`, sekret jest w `.env` Kalendarza.
