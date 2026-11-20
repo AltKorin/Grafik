@@ -82,6 +82,22 @@ export default function WeekPage({ firm }: { firm: Workplace }) {
                 <th>{t("Osoba")}</th>
                 {w.days.map((d) => <th key={d} className={d === w.today ? "today" : undefined}>{dayLabel(d)}</th>)}
               </tr>
+              {w.events && w.events.length > 0 && (
+                <tr className="receptions">
+                  <th>{t("Przyjęcia")}</th>
+                  {w.days.map((d) => (
+                    <th key={d}>
+                      {w.events!.filter((e) => e.date === d).map((e) => (
+                        <span key={e.id} className={e.tentative ? "reception tentative" : "reception"}
+                          title={e.tentative ? t("Wstępne — termin jeszcze niepotwierdzony") : undefined}>
+                          <span className="num">{e.start}</span> {e.kind} · {t("{n} os.", { n: e.guests })}
+                          {e.tentative && <small> · {t("wstępne")}</small>}
+                        </span>
+                      ))}
+                    </th>
+                  ))}
+                </tr>
+              )}
             </thead>
             <tbody>
               {w.people.map((p) => {

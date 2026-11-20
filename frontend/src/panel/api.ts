@@ -30,11 +30,15 @@ export const api = {
   delete: <T,>(path: string, body: unknown) => call<T>(path, "DELETE", body),
 };
 
-type Session = { user: string | null; csrf: string };
+type Session = { user: string | null; csrf: string; komunikaty?: string[] };
+
+/** Komunikaty z serwera po logowaniu kontem sudomie (np. odmowa dostępu) — pokazuje je ekran logowania. */
+export let komunikatySesji: string[] = [];
 
 export async function loadSession(): Promise<string | null> {
   const s = await call<Session>("/session/");
   csrf = s.csrf;
+  komunikatySesji = s.komunikaty ?? [];
   return s.user;
 }
 
@@ -65,7 +69,9 @@ export type Week = {
   week: string; days: string[]; today: string;
   people: { id: string; name: string; department: string | null; editable: boolean }[];
   shifts: Shift[]; unavailability: Away[];
+  events: Reception[] | null; // null = Kalendarz przyjęć not connected or not answering: no row
 };
+export type Reception = { id: number; date: string; start: string; kind: string; guests: number; tentative: boolean };
 export type RequestKind = "swap" | "cancel" | "modify" | "add";
 export type ChangeRequest = {
   id: string; kind: RequestKind; kind_label: string; status: "pending" | "approved" | "rejected" | "withdrawn"; status_label: string;

@@ -8,6 +8,10 @@ export const EN: Record<string, string> = {
   "Akceptuję": "I accept the",
   "Aktywny (zarchiwizowany nie loguje się i nie odbija)": "Active (an archived person cannot log in or punch)",
   "Anuluj": "Cancel",
+  "Przyjęcia": "Receptions",
+  "wstępne": "tentative",
+  "Wstępne — termin jeszcze niepotwierdzony": "Tentative — not confirmed yet",
+  "{n} os.": "{n} guests",
   "Anuluj odbicie": "Cancel the punch",
   "Anuluj zaproszenie": "Cancel invitation",
   "Bez szczegółów zdrowotnych — wystarczy rodzaj.": "No health details — the type is enough.",
@@ -390,4 +394,6 @@ export const EN: Record<string, string> = {
   "{firm} zaprasza Cię do Grafiku. Ustaw login i hasło — będziesz widzieć swój grafik i odbijać się telefonem.": "{firm} invites you to Grafik. Set a login and password — you will see your schedule and punch in with your phone.",
   "{h} h w tygodniu": "{h} h this week",
   "śr": "Wed",
+  "Zaloguj przez {nazwa}": "Sign in with {nazwa}",
+  "albo loginem i hasłem Grafiku:": "or with your Grafik login and password:",
 };

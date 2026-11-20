@@ -15,6 +15,9 @@ class Workplace(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # A visitor's sandbox from „Wypróbuj demo” (grafik.demo): erased after this moment. Empty = a real firm.
     demo_until = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Firma w Koncie sudomie (ten sam uuid): dostępami jej ludzi do Grafiku zarządza właściciel w Koncie.
+    # Ustawia `manage.py powiaz_konto --firma`. False = firma tylko w Grafiku, logowanie jak dawniej.
+    w_koncie = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def __str__(self):

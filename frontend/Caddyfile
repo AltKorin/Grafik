@@ -20,7 +20,7 @@
  request_body @small {
   max_size 512KB
  }
- @backend path /api/* /admin /admin/* /static/*
+ @backend path /api/* /admin /admin/* /static/* /oidc/*
  handle @backend {
   reverse_proxy api:8000 {
    header_up X-Forwarded-For {client_ip}

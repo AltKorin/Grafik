@@ -3,6 +3,40 @@
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.
 
+## Logowanie kontem sudomie (gałąź `sso-konto`, NIEWDROŻONE, 2026-11-20, OpenProject #767)
+- Grafik jako KLIENT Konta sudomie (https://konto.sudomie.pl) przez paczkę `core_sso` (agency-platform-core 0.3.0, wheel w
+  `backend/vendor/`, instalowany w Dockerfile `--no-deps`; authlib + requests w `requirements.lock`).
+- Flaga: puste `OIDC_ISSUER` = brak przycisku, `/oidc/*` → `/panel/`. Z flagą: na ekranie logowania „Zaloguj przez Konto sudomie”
+  (flaga `sso` w `/api/public-config/`), komunikaty odmowy wracają przez `/api/session/` (`komunikaty`) i pokazuje je Login.
+- Hak ról `core/sso.py` (prawa w docstringu): firma z Konta = Workplace o tym samym uuid; Employee zakładany / rola
+  aktualizowana przy każdym logowaniu; w firmie `w_koncie=True` odebrany dostęp = Employee nieaktywny; firm spoza Konta nie rusza;
+  zwolnionego w Grafiku nie reaktywuje.
+- Nowe pole `Workplace.w_koncie` (migracja `grafik/0xxx_workplace_w_koncie`, addytywna).
+- Migracja kont: `manage.py powiaz_konto <login> <sub z Konta> --firma <uuid>` — wiąże istniejące konto (bez nowego konta, stare
+  hasło zostaje jako awaryjne) i oznacza firmę jako zarządzaną przez Konto.
+- Caddy: `/oidc/*` → backend. Vite: proxy `/oidc/` z `changeOrigin: false` (redirect_uri z Hosta SPA).
+- Testy: `core/test_sso.py` (9). Pełny zestaw 89, jedyny błąd = znany #653. E2E lokalnie z Kontem: Marcin wchodzi w swoje
+  konto (rola zsynchronizowana), osoba bez dostępu do Grafiku dostaje komunikat, konto nie powstaje.
+- Stare zmiany „Grafik jako dostawca” (porzucone, #756): `git stash list` → stash@{0} na gałęzi sso-oidc.
+- **Wdrożenie (po zgodzie Konrada):** (1) konto-prod: `klient_oidc grafik https://grafik.sudomie.pl/oidc/callback/` → plik 600;
+  (2) dane klienta + `OIDC_ISSUER=https://konto.sudomie.pl/o` do `.env` grafik-prod; (3) push + `deploy/deploy.sh`;
+  (4) grafik-prod: `powiaz_konto biuro@przystanekwielbark.pl 2 --firma d8c0be9a-361c-449c-8dbf-8903330cf6ec`; (5) smoke.
+
+## Przyjęcia z Kalendarza na grafiku tygodnia (gałąź `sso-konto`, NIEWDROŻONE, 2026-11-20, OpenProject #759)
+- Wiersz „Przyjęcia” pod nagłówkami dni w `panel/Week.tsx` („13:00 Stypa · 40 os. · wstępne”). Pole `events` w `/api/w/<firma>/week/`:
+  `null` = brak sekcji (niepodłączone / Kalendarz milczy), lista = przyjęcia (pusta = brak wiersza).
+- Serwis `grafik/events.py` (prawa w docstringu, testy `grafik/test_events.py`, 11): token aplikacji z Konta (client credentials,
+  scope `api`, `OIDC_ISSUER/token/`, trzymany do wygaśnięcia − 60 s) → `GET KALENDARZ_URL/api/przyjecia?firma=<uuid Workplace>`.
+  Tylko firmy `w_koncie=True`. Błąd/timeout (3 s) = `None` + ostrzeżenie w logu, pamiętane 60 s (backpressure); 404 („nie ta firma”)
+  bez ostrzeżenia, pamiętane 5 min; dane 5 min w cache.
+- Flaga: puste `KALENDARZ_URL` albo brak `KONTO_API_CLIENT_ID` albo `OIDC_ISSUER` = wiersza nie ma. **Zależy od kroku SSO** (OIDC_ISSUER).
+- Sprawdzone lokalnie end-to-end bez mocków: Konto (runserver) + Kalendarz (runserver) + Grafik (runserver + Vite) — zrzut
+  Playwright, stypa 21.11 w wierszu, następny tydzień bez wiersza, 0 błędów JS.
+- **Wdrożenie (po SSO i po zgodzie Konrada):** (1) konto-prod: `manage.py klient_api grafik > /root/klient-api-grafik.env` (600);
+  (2) pipe obu linii `KONTO_API_CLIENT_*` do `/opt/grafik/.env` + `KALENDARZ_URL=https://samiswoi.sudomie.pl`; (3) client_id
+  do `API_KLIENCI` w `/opt/kalendarz/.env` (samiswoi-prod) i deploy Kalendarza; (4) deploy Grafiku; (5) Workplace Marcina ma
+  `w_koncie=True` po `powiaz_konto --firma` (krok SSO); (6) smoke: grafik Marcina, tydzień 16–22.11 → stypa w sobotę.
+
 ## Newsletter sudomie przy rejestracji (WDROŻONE 2026-11-12, gałąź newsletter-sudomie, czeka na merge)
 - Pole „Chcę dostawać newsletter sudomie” przy rejestracji, domyślnie niezaznaczone. Kod: `backend/core/newsletter.py`, pole w `frontend/src/site/Site.tsx` (PL/EN), flaga `newsletter` w `/api/public-config/`.
 - **Flaga:** bez `NEWSLETTER_KLUCZ` w `.env` pola nie ma i nic nie wychodzi. Z kluczem: po zatwierdzeniu rejestracji

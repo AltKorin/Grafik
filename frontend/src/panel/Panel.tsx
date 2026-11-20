@@ -1,7 +1,7 @@
 import "../fonts.css";
 import { useEffect, useState, type FormEvent } from "react";
 import { PRIVACY } from "../site/Site.tsx";
-import { api, loadSession, logIn, logOut, useApi, type Workplace } from "./api.ts";
+import { api, komunikatySesji, loadSession, logIn, logOut, useApi, type Workplace } from "./api.ts";
 import { DemoBar } from "./Demo.tsx";
 import Requests from "./Requests.tsx";
 import Team from "./Team.tsx";
@@ -34,8 +34,13 @@ export function Login({ onLogin, title = t("Grafik"), lead = t("Zaloguj się, ż
   title?: string;
   lead?: string;
 }) {
-  const [error, setError] = useState("");
+  const [error, setError] = useState(komunikatySesji.join(" "));
   const [busy, setBusy] = useState(false);
+  const [sso, setSso] = useState<{ nazwa: string } | null>(null);
+  useEffect(() => {
+    // Przycisk „Zaloguj przez Konto sudomie” tylko, gdy wdrożenie ma włączone logowanie kontem (flaga w public-config).
+    fetch("/api/public-config/").then((r) => r.json()).then((c: { sso?: { nazwa: string } | null }) => setSso(c.sso ?? null)).catch(() => undefined);
+  }, []);
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -56,6 +61,14 @@ export function Login({ onLogin, title = t("Grafik"), lead = t("Zaloguj się, ż
         <h1>{title}</h1>
         <p>{lead}</p>
         {error && <p className="error">{error}</p>}
+        {sso && (
+          <>
+            <a className="btn primary" href={`/oidc/login/?next=${encodeURIComponent(window.location.pathname)}`}>
+              {t("Zaloguj przez {nazwa}", { nazwa: sso.nazwa })}
+            </a>
+            <p className="hint">{t("albo loginem i hasłem Grafiku:")}</p>
+          </>
+        )}
         <Field label={t("Login lub e-mail")}>{(id) => <input id={id} name="username" type="text" autoComplete="username" autoCapitalize="none" required />}</Field>
         <Field label={t("Hasło")}>{(id) => <input id={id} name="password" type="password" autoComplete="current-password" required />}</Field>
         <button className="btn primary" disabled={busy}>

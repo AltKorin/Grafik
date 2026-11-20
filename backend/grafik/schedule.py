@@ -8,7 +8,7 @@ from django.utils import timezone
 from core.domain_errors import DomainError
 from core.i18n import MONTHS_EN, error_body, is_english, tr
 
-from . import domain
+from . import domain, events
 from .access import employee_in, manages, require_manager, sees, workplace_access
 from .models import ChangeRequest, Shift, Unavailability
 
@@ -62,6 +62,7 @@ def week(user, workplace_id, params):
         "shifts": [shift_json(s) for s in Shift.objects.filter(employee__in=people, date__range=(start, end))],
         "unavailability": [unavailability_json(u) for u in Unavailability.objects.filter(
             employee__in=people, date_from__lte=end, date_to__gte=start)],
+        "events": events.for_week(w, start, end),
     }
 
 

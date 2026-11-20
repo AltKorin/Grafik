@@ -39,9 +39,12 @@ def csrf_denied(request):
 
 
 def me(request):
+    from django.contrib import messages
     return {
         "user": request.user.username if request.user.is_authenticated else None,
         "csrf": get_token(request),
+        # komunikaty po logowaniu kontem sudomie (core_sso odsyła na /panel/ z wiadomością o odmowie)
+        "komunikaty": [str(m) for m in messages.get_messages(request)],
     }
 
 
@@ -120,4 +123,5 @@ def terms(request):
 @permission_classes([AllowAny])
 def public_config(request):
     # Empty id = no analytics tag at all (CLAUDE.md: feature flag, switched on per deployment).
-    return Response({"ga_measurement_id": settings.GA_MEASUREMENT_ID, "demo": settings.DEMO_MAX > 0, "newsletter": newsletter.wlaczony()})
+    return Response({"ga_measurement_id": settings.GA_MEASUREMENT_ID, "demo": settings.DEMO_MAX > 0, "newsletter": newsletter.wlaczony(),
+                     "sso": {"nazwa": settings.OIDC_NAZWA} if settings.OIDC_ISSUER else None})

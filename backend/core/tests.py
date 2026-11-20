@@ -203,7 +203,7 @@ class RegistrationTests(TestCase):
         terms = anonymous.get("/api/terms/").json()
         self.assertIn("Usługodawca", terms["html"])
         self.assertRegex(terms["version"], r"^\d{4}-\d{2}-\d{2}$")
-        self.assertEqual(anonymous.get("/api/public-config/").json(), {"ga_measurement_id": "", "demo": False, "newsletter": False})
+        self.assertEqual(anonymous.get("/api/public-config/").json(), {"ga_measurement_id": "", "demo": False, "newsletter": False, "sso": None})
 
 
 class PasswordChangeTests(TestCase):

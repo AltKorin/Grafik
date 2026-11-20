@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from core import views
 from grafik import views as g
@@ -8,6 +8,7 @@ W = "api/w/<uuid:workplace_id>"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("oidc/", include("core_sso.urls")),  # logowanie kontem sudomie (core_sso); redirect_uri: /oidc/callback/
     path("api/health/", views.health),
     path("api/session/", views.session),
     path("api/register/", views.register),

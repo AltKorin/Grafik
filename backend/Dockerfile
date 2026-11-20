@@ -3,6 +3,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.lock ./requirements.lock
 RUN pip install --no-cache-dir -r requirements.lock
+# agency-platform-core (core_sso: logowanie kontem sudomie) — vendorowany wheel; zależności już są w requirements.lock
+COPY vendor/ ./vendor/
+RUN pip install --no-cache-dir --no-deps vendor/*.whl
 RUN useradd --create-home --uid 1000 app
 COPY --chown=app:app . .
 # Admin static files are baked into the read-only image and served by WhiteNoise.

@@ -110,3 +110,21 @@
 - Wdrożenie: agent nie ma dostępu do produkcji; robi Konrad.
 ### Następne kroki
 - Commit, deploy, klucz w `.env`, próba na własnym adresie. Testy: `manage.py test core` 31 OK (7 nowych). Uwaga: `grafik.tests.SandboxDemoTests.test_expired_sandbox_disappears_with_its_accounts` pada także bez tych zmian.
+
+## Sesja 2026-11-20 (wieczór — most przyjęć Kalendarz → Grafik)
+### Zrobiono
+- Most przyjęć #759 (lokalnie, na gałęzi `sso-konto`, bez commita): `grafik/events.py` + pole `events` w tygodniu + wiersz
+  „Przyjęcia” w `Week.tsx` (oznaczenie „wstępne”), 3 nowe teksty EN. Testy `grafik/test_events.py` 11 OK; pełny zestaw 99,
+  jedyny błąd = #653; `npm run check`, tsc, build OK.
+- Konrad: SSO w Grafiku (#767) „nie teraz” — krok wdrożenia czeka.
+### Zadziałało
+- Prawdziwy przepływ bez mocków na trzech serwerach lokalnych (Konto 8031, Kalendarz 8032, Grafik 8017 + Vite 5180) na
+  kopiach baz w scratchpadzie (moduł ustawień `grafik_most` nadpisuje DATABASES/CACHES) — dev-baza nietknięta.
+- 404 z Kalendarza = „nie ta firma” → cichy cache 5 min zamiast ostrzeżenia co minutę (każda nowa firma z Konta by spamowała).
+### Nie zadziałało
+- `ssh grafik-prod` zablokowany przez tryb auto (klasyfikator uprawnień) — stan produkcji nie sprawdzony w tej sesji.
+- Pierwszy zrzut Playwright: headless Chromium startuje po angielsku (Grafik wybiera język z przeglądarki) — `locale: "pl-PL"`.
+- Kopia bazy Grafiku bez migracji z gałęzi (`no such column w_koncie`) — `migrate` na kopii w scratchpadzie.
+### Następne kroki
+- Wdrożenie: najpierw SSO (#767), potem most (kroki w HANDOFF → „Przyjęcia z Kalendarza”). Oba czekają na zgodę Konrada.
+- Commit gałęzi `sso-konto` zawiera teraz SSO + most razem.

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "simple_history",
+    "core_sso",  # logowanie kontem sudomie (agency-platform-core); bez OIDC_ISSUER wyłączone
     "core",
     "grafik",
 ]
@@ -173,3 +174,23 @@ JAZZMIN_SETTINGS = {
 NEWSLETTER_URL = os.environ.get("NEWSLETTER_URL", "https://sudomie.pl/chat-api/newsletter")
 NEWSLETTER_KLUCZ = os.environ.get("NEWSLETTER_KLUCZ", "")
 NEWSLETTER_TIMEOUT = float(os.environ.get("NEWSLETTER_TIMEOUT", "5"))
+
+# Logowanie kontem sudomie (OpenProject #767, CLAUDE.md „Rodzina produktów sudomie”). Paczka core_sso.
+# Puste OIDC_ISSUER = przycisku nie ma, /oidc/* odsyła na /panel/ — Grafik działa jak dawniej (flaga).
+OIDC_ISSUER = os.environ.get("OIDC_ISSUER", "").rstrip("/")
+OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID", "")
+OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET", "")
+OIDC_NAZWA = os.environ.get("OIDC_NAZWA", "Konto sudomie")
+# Przyjęcia z Kalendarza na grafiku tygodnia (#759). Puste KALENDARZ_URL albo brak klienta API Konta = sekcji nie ma (flaga).
+# Klient API: konto-prod `manage.py klient_api grafik` → KONTO_API_CLIENT_ID/SECRET. Token z OIDC_ISSUER/token/.
+# ponytail: jeden Kalendarz na instalację Grafiku; mapa firma → adres, gdy dojdzie druga restauracja.
+KALENDARZ_URL = os.environ.get("KALENDARZ_URL", "").rstrip("/")
+KONTO_API_CLIENT_ID = os.environ.get("KONTO_API_CLIENT_ID", "")
+KONTO_API_CLIENT_SECRET = os.environ.get("KONTO_API_CLIENT_SECRET", "")
+EVENTS_TIMEOUT = float(os.environ.get("EVENTS_TIMEOUT", "3"))
+EVENTS_TTL = int(os.environ.get("EVENTS_TTL", "300"))
+EVENTS_FAIL_TTL = int(os.environ.get("EVENTS_FAIL_TTL", "60"))
+SSO_PRODUKT = "grafik"
+SSO_FIRMA = ""  # wielofirmowy: firma w Koncie = Workplace o tym samym uuid
+SSO_PO_ZALOGOWANIU = "core.sso.role_z_konta"
+SSO_URL_LOGOWANIA = "/panel/"  # komunikaty odmowy odbiera /api/session/ (core.views.me)
