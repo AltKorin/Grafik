@@ -573,7 +573,8 @@ class SandboxDemoTests(TestCase):
             self.assertFalse(APIClient().get("/api/public-config/").json()["demo"])
 
     def test_expired_sandbox_disappears_with_its_accounts(self):
-        client, demo = self.visitor()
+        with at(0):  # piaskownica musi powstać w „zamrożonym” czasie; inaczej termin ważności liczy się od zegara systemowego
+            client, demo = self.visitor()
         users = get_user_model().objects.count()
         with at(60 * 25):
             self.assertIsNone(client.get("/api/demo/").json()["demo"])
