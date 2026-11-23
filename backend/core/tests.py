@@ -199,6 +199,7 @@ class RegistrationTests(TestCase):
     @override_settings(DEMO_MAX=0)  # the server .env switches the demo on; this test is about the defaults
     @override_settings(NEWSLETTER_KLUCZ="")
     @override_settings(OIDC_ISSUER="")  # the server .env switches SSO on, too
+    @override_settings(GA_MEASUREMENT_ID="")  # …a serwerowe .env włącza analitykę; ten test sprawdza domyślne
     def test_terms_and_public_config_are_public(self):
         anonymous = APIClient()
         terms = anonymous.get("/api/terms/").json()
