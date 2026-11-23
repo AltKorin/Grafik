@@ -16,6 +16,6 @@ for _ in $(seq 1 60); do
 done
 [ "$(docker compose ps api --format '{{.Health}}')" = healthy ] || { docker compose logs --tail 50 api; exit 1; }
 docker compose exec -T api python manage.py check --deploy --fail-level ERROR
-docker compose exec -T api python manage.py test grafik core
+docker compose exec -T api python manage.py test grafik core --noinput
 docker compose ps
 echo "Gotowe. Sprawdź z zewnątrz: deploy/smoke.sh https://<domena>"
