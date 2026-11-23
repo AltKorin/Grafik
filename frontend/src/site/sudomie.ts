@@ -17,6 +17,13 @@ export const SUDOMIE_PRODUCTS = [
     "en": "Live team training: guest service, teamwork, AI"
   },
   {
+    "id": "kalendarz",
+    "url": "https://kalendarz.sudomie.pl/",
+    "name": "Kalendarz przyjęć",
+    "pl": "Przyjęcia i terminy grup dla restauracji i hoteli: plan obsługi, wycena, wydruki",
+    "en": "Bookings and group stays for restaurants and hotels: service plan, pricing, printouts"
+  },
+  {
     "id": "agenda",
     "url": "https://agenda.sudomie.pl/",
     "name": "HotelAgenda",
