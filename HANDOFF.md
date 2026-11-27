@@ -8,6 +8,7 @@
   `scripts/wzory_umow.py` podmienia dane restauracji na pola `[...]` i ma assert, że w paczce DOCX (nagłówki, stopki, relacje,
   media) nie zostało nic z Sami Swoi. Zmiana treści = zmiana w Malborku, potem `python3 scripts/wzory_umow.py`.
 - Statyczne pliki serwuje Caddy (`file_server`), bez backendu. Treść jest gastronomiczna (kelner, HACCP, bar).
+- Wygląd (PR #1 → b9ac12b, wdrożone 27.11): wzorzec `settings-list` jak w Działach + przyciski `btn` „Pobierz (Word)”.
 
 ## sitemap.xml — 2026-11-23
 - Dodane: `frontend/public/sitemap.xml` → `https://grafik.sudomie.pl/ i /regulamin`.

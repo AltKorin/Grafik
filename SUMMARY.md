@@ -160,4 +160,6 @@
 - Headless Chrome otwiera panel po angielsku: zrzuty robić z `locale: "pl-PL"`.
 ### Następne kroki
 - Wdrożone 27.11 (592d14f, push.sh + deploy.sh, testy 100/100, smoke OK, 4 DOCX → 200 z typem Worda). Umowa o imprezę z Malborka pasuje raczej do Kalendarza przyjęć niż do Grafiku.
+- (cd.) Po uwadze Konrada o spadku jakości frontendu: karta wzorów przepięta na `settings-list` + `btn` (PR #1 → b9ac12b, wdrożone,
+  testy na serwerze 100/100, smoke OK). Wcześniej gołe linki i style inline — odstawały od reszty panelu.
 
