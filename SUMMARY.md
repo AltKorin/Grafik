@@ -159,5 +159,5 @@
   `drop_rel` + assert na całej paczce.
 - Headless Chrome otwiera panel po angielsku: zrzuty robić z `locale: "pl-PL"`.
 ### Następne kroki
-- Niewdrożone i niezacommitowane; umowa o imprezę z Malborka pasuje raczej do Kalendarza przyjęć niż do Grafiku.
+- Wdrożone 27.11 (592d14f, push.sh + deploy.sh, testy 100/100, smoke OK, 4 DOCX → 200 z typem Worda). Umowa o imprezę z Malborka pasuje raczej do Kalendarza przyjęć niż do Grafiku.
 

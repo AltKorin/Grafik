@@ -1,5 +1,5 @@
 # HANDOFF — Grafik
-## Wzory umów i aneksów — 2026-11-27 (#824, lokalnie, NIEwdrożone)
+## Wzory umów i aneksów — 2026-11-27 (#824, WDROŻONE 27.11, commit 592d14f)
 - Panel → „Zespół i NFC” → karta „Wzory umów i aneksów” (tylko dyrektor/admin): 4 pliki DOCX z `frontend/public/wzory/`
   (umowa o pracę + informacja o warunkach zatrudnienia; umowa zlecenia + ewidencja godzin + oświadczenie ZUS/PIT;
   aneks o odpowiedzialności za mienie do UoP i do zlecenia: portfel kelnerski, bar). Komunikat w panelu i ramka w każdym
@@ -8,7 +8,6 @@
   `scripts/wzory_umow.py` podmienia dane restauracji na pola `[...]` i ma assert, że w paczce DOCX (nagłówki, stopki, relacje,
   media) nie zostało nic z Sami Swoi. Zmiana treści = zmiana w Malborku, potem `python3 scripts/wzory_umow.py`.
 - Statyczne pliki serwuje Caddy (`file_server`), bez backendu. Treść jest gastronomiczna (kelner, HACCP, bar).
-- `frontend/public/` (sitemap, robots) dalej nie jest w gicie — przy commicie dodaj też `wzory/`.
 
 ## sitemap.xml — 2026-11-23
 - Dodane: `frontend/public/sitemap.xml` → `https://grafik.sudomie.pl/ i /regulamin`.
