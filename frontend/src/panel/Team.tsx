@@ -64,12 +64,16 @@ function Templates() {
     <section className="card settings-card">
       <h2>{t("Wzory umów i aneksów")}</h2>
       <p className="notice">
-        {t("To są wzory, nie gotowe umowy. Przygotowaliśmy je dla restauracji: przed użyciem dostosuj je do swojego obiektu (dane firmy, stanowiska, stawki, czas pracy, zasady rozliczeń) i daj do sprawdzenia kadrom lub księgowej. Pola w [nawiasach] uzupełnij albo usuń.")}
+        {t("To wzory przygotowane dla restauracji, nie gotowe umowy. Przed użyciem dostosuj je do swojego obiektu i daj do sprawdzenia kadrom lub księgowej. Pola w [nawiasach] uzupełnij albo usuń.")}
       </p>
-      <ul style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+      <ul className="settings-list">
         {TEMPLATES.map(([file, name, what]) => (
           <li key={file}>
-            <a href={`/wzory/${file}`} download>{name}</a> <span className="muted">· {what} · DOCX</span>
+            <span className="settings-name">{name}</span>
+            <span className="muted">{what}</span>
+            <span className="settings-actions">
+              <a className="btn" href={`/wzory/${file}`} download>{t("Pobierz (Word)")}</a>
+            </span>
           </li>
         ))}
       </ul>
