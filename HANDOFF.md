@@ -1,4 +1,22 @@
 # HANDOFF — Grafik
+## Wzory umów i aneksów — 2026-11-27 (#824, lokalnie, NIEwdrożone)
+- Panel → „Zespół i NFC” → karta „Wzory umów i aneksów” (tylko dyrektor/admin): 4 pliki DOCX z `frontend/public/wzory/`
+  (umowa o pracę + informacja o warunkach zatrudnienia; umowa zlecenia + ewidencja godzin + oświadczenie ZUS/PIT;
+  aneks o odpowiedzialności za mienie do UoP i do zlecenia: portfel kelnerski, bar). Komunikat w panelu i ramka w każdym
+  dokumencie: to WZÓR, dostosuj do obiektu, daj do sprawdzenia kadrom/księgowej.
+- Źródło treści: projekt Malbork (`~/Claude/Malbork/scripts/umowy_pracownicze.py`, `aneksy_odpowiedzialnosc.py`). Generator
+  `scripts/wzory_umow.py` podmienia dane restauracji na pola `[...]` i ma assert, że w paczce DOCX (nagłówki, stopki, relacje,
+  media) nie zostało nic z Sami Swoi. Zmiana treści = zmiana w Malborku, potem `python3 scripts/wzory_umow.py`.
+- Statyczne pliki serwuje Caddy (`file_server`), bez backendu. Treść jest gastronomiczna (kelner, HACCP, bar).
+- `frontend/public/` (sitemap, robots) dalej nie jest w gicie — przy commicie dodaj też `wzory/`.
+
+## sitemap.xml — 2026-11-23
+- Dodane: `frontend/public/sitemap.xml` → `https://grafik.sudomie.pl/ i /regulamin`.
+- Powód: każda poddomena to osobny serwis dla Google; aplikacje nie miały sitemapy, więc nie miały się jak zgłosić.
+- Uwaga: `robots.txt` na poddomenach aplikacji jest nadpisywany przez Cloudflare (managed robots), więc sitemapę trzeba zgłosić ręcznie w Search Console albo wyłączyć zarządzanie robots dla hosta.
+- **robots.txt też w aplikacji (2026-11-23 17:1x):** Cloudflare dokleja swoje reguły botów i wcześniej pod nim leciał HTML SPA — teraz aplikacja serwuje własny `robots.txt` z linią `Sitemap:`; Cloudflare dalej dokleja swoje (tak zostaje).
+- **Wdrożone 2026-11-23** (push + deploy.sh, build i testy zielone). Na żywo: `https://grafik.sudomie.pl/sitemap.xml` → 200, `text/xml`.
+- Wdrożenie: `deploy/deploy.sh` (przebudowa frontendu/backendu).
 
 Stan: 2026-10-26. **MVP v1 gotowe lokalnie** (backend + panel + NFC + landing), testy 55/55, E2E 12/12 na
 stosie Docker. **Produkcja od 28.10: https://grafik.sudomie.pl** (LXC 108, alias `grafik-prod`, `deploy/PROXMOX-HP.md`). Kolejka prac: OpenProject, projekt `grafik`.

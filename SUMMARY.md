@@ -145,3 +145,19 @@
 ### Następne kroki
 - Gałąź `sso-konto` zmergowana do `main` Grafiku (fast-forward, 20.11), lokalnie — push na GitHub osobno. Utwardzenie DOT w Koncie — #774. Seed menu Kalendarza — #773.
 - Stary `/root/klient-kalendarz.env` na konto-prod usunięty (`shred -u`, 20.11); w /root nie ma już plików .env z sekretami.
+- 2026-11-23: stopka z Kalendarzem; naprawione testy czytające serwerowe .env (GA) i zegar w teście demo; `deploy.sh` z `--noinput`.
+
+## Sesja 2026-11-27
+### Zrobiono
+- Wzory umów i aneksów z Malborka w panelu Grafiku (#824): generator `scripts/wzory_umow.py` → `frontend/public/wzory/*.docx`,
+  karta „Wzory umów i aneksów” w „Zespół i NFC” (dyrektor), tłumaczenia EN.
+### Zadziałało
+- Treść brana z modułów Malborka przez podmianę funkcji `akapit`/`punkt`/`szkielet`/`zapisz`: jedna wersja tekstu, bez kopii.
+- `npm run check` OK (404 teksty), `tsc` OK, Playwright: karta widoczna, pobieranie daje właściwy plik, 0 błędów JS.
+### Nie zadziałało
+- Pierwsza wersja zostawiła w DOCX logo i link do strony restauracji (osierocone relacje nagłówka/stopki z szablonu). Teraz
+  `drop_rel` + assert na całej paczce.
+- Headless Chrome otwiera panel po angielsku: zrzuty robić z `locale: "pl-PL"`.
+### Następne kroki
+- Niewdrożone i niezacommitowane; umowa o imprezę z Malborka pasuje raczej do Kalendarza przyjęć niż do Grafiku.
+
